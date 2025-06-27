@@ -22,6 +22,8 @@ add_executable(l2_middlewares
     src/main.cpp
     src/rsa_manager.cpp
     src/blowfish_openssl.cpp
+    src/l2_checksum.cpp
+    src/login_encryption.cpp
 )
 
 target_link_libraries(l2_middlewares
