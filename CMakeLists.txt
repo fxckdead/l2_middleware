@@ -15,6 +15,15 @@ find_package(Boost REQUIRED COMPONENTS system)
 
 # Include directories
 include_directories(src)
+include_directories(third_party)
+
+# Blowfish third-party library
+add_library(blowfish STATIC
+    third_party/blowfish/blowfish.cc
+    third_party/blowfish/blowfish2.cc
+)
+
+target_include_directories(blowfish PUBLIC third_party)
 
 # Main executable
 add_executable(l2_middlewares
@@ -23,6 +32,7 @@ add_executable(l2_middlewares
 
 target_link_libraries(l2_middlewares
     Boost::system
+    blowfish
 )
 
 # Windows-specific libraries
