@@ -15,6 +15,9 @@
 #include "auth_login_packet.hpp"
 #include "packet_factory.hpp"
 
+// Forward declaration for packet integration tests
+void run_all_packet_tests();
+
 using boost::asio::ip::tcp;
 
 void start_tcp_server()
@@ -87,6 +90,9 @@ void run_all_tests()
 
     // Demo L2 authentication flow
     AuthLoginPacket::demoL2AuthFlow();
+
+    // Run packet integration tests
+    run_all_packet_tests();
 
     std::cout << std::string(60, '=') << std::endl;
     std::cout << "        ALL COMPONENT TESTS COMPLETED" << std::endl;

@@ -31,6 +31,7 @@ add_executable(l2_middlewares
     src/init_packet.cpp
     src/auth_login_packet.cpp
     src/packet_factory.cpp
+    src/packet_tests.cpp
 )
 
 target_link_libraries(l2_middlewares
