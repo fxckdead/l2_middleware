@@ -7,6 +7,7 @@
 #include "blowfish_openssl.hpp"
 #include "l2_checksum.hpp"
 #include "login_encryption.hpp"
+#include "session_key.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -29,6 +30,11 @@ void test_l2_checksum()
 void test_login_encryption()
 {
     LoginEncryption::runTests();
+}
+
+void test_session_key()
+{
+    SessionKey::runTests();
 }
 
 void start_tcp_server()
@@ -89,6 +95,9 @@ int main()
 
     // Test Login encryption functionality (Rust compatibility)
     test_login_encryption();
+
+    // Test Session Key management (Rust compatibility)
+    test_session_key();
 
     std::cout << "\n"
               << std::string(50, '=') << std::endl;

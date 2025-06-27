@@ -24,6 +24,7 @@ add_executable(l2_middlewares
     src/blowfish_openssl.cpp
     src/l2_checksum.cpp
     src/login_encryption.cpp
+    src/session_key.cpp
 )
 
 target_link_libraries(l2_middlewares
