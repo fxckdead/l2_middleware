@@ -8,6 +8,7 @@
 #include "l2_checksum.hpp"
 #include "login_encryption.hpp"
 #include "session_key.hpp"
+#include "game_client_encryption.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -35,6 +36,11 @@ void test_login_encryption()
 void test_session_key()
 {
     SessionKey::runTests();
+}
+
+void test_game_client_encryption()
+{
+    GameClientEncryption::runTests();
 }
 
 void start_tcp_server()
@@ -98,6 +104,9 @@ int main()
 
     // Test Session Key management (Rust compatibility)
     test_session_key();
+
+    // Test Game Client Encryption (Rust compatibility)
+    test_game_client_encryption();
 
     std::cout << "\n"
               << std::string(50, '=') << std::endl;
