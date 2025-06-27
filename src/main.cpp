@@ -11,6 +11,9 @@
 #include "game_client_encryption.hpp"
 #include "packet.hpp"
 #include "packet_buffer.hpp"
+#include "init_packet.hpp"
+#include "auth_login_packet.hpp"
+#include "packet_factory.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -78,6 +81,12 @@ void run_all_tests()
     PacketUtils::runTests();
     ReadablePacketBuffer::runTests();
     SendablePacketBuffer::runTests();
+    InitPacket::runTests();
+    AuthLoginPacket::runTests();
+    PacketFactory::runTests();
+
+    // Demo L2 authentication flow
+    AuthLoginPacket::demoL2AuthFlow();
 
     std::cout << std::string(60, '=') << std::endl;
     std::cout << "        ALL COMPONENT TESTS COMPLETED" << std::endl;

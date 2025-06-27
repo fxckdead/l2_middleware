@@ -86,6 +86,9 @@ public:
     static TestResult testRustCompatibilityEncryption();
     static TestResult testRustCompatibilityLoginPacket();
 
+    // Helper function to load private key from PEM file (public for tests)
+    static std::vector<uint8_t> loadPrivateKeyFromPEM(const std::string &pemFilePath);
+
     // Run all tests
     static void runAllTests();
 
@@ -102,7 +105,4 @@ private:
 
     // Helper function to create RSA public key from modulus
     static std::vector<uint8_t> createPublicKeyFromModulus(const std::vector<uint8_t> &modulus);
-
-    // Helper function to load private key from PEM file
-    static std::vector<uint8_t> loadPrivateKeyFromPEM(const std::string &pemFilePath);
 };
