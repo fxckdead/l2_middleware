@@ -34,6 +34,7 @@ add_executable(l2_middlewares
     src/packet_tests.cpp
     src/client_connection.cpp
     src/connection_manager.cpp
+    src/login_server.cpp
 )
 
 target_link_libraries(l2_middlewares
