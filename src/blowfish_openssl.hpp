@@ -34,4 +34,7 @@ public:
     // Single block operations (8 bytes)
     void encrypt_block(uint8_t *block);
     void decrypt_block(uint8_t *block);
+
+    // Test function for Blowfish functionality
+    static void runTests();
 };
