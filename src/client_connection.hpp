@@ -134,6 +134,9 @@ public:
     void set_packet_handler(PacketHandler handler) { packet_handler_ = std::move(handler); }
     void set_disconnect_handler(DisconnectHandler handler) { disconnect_handler_ = std::move(handler); }
 
+    // New method to send raw init packet
+    void send_init_packet_raw(const std::vector<uint8_t> &packet_data);
+
 private:
     // Async I/O methods (matching Rust connection.rs pattern)
     void do_read();

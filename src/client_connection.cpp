@@ -200,16 +200,95 @@ void ClientConnection::send_init_packet(const ScrambledRSAKeyPair &rsa_pair,
         set_rsa_key_pair(rsa_pair);
         blowfish_key_ = blowfish_key;
 
-        // Create and send init packet
+        // Create init packet
         auto init_packet = std::make_unique<InitPacket>(session_id_, rsa_pair, blowfish_key);
-        send_packet(std::move(init_packet));
+
+        // 🔍 DEBUG: Check InitPacket components
+        log_connection_event("DEBUG: RSA modulus size: " + std::to_string(rsa_pair.getScrambledModulus().size()));
+        log_connection_event("DEBUG: Blowfish key size: " + std::to_string(blowfish_key.size()));
+        log_connection_event("DEBUG: Expected InitPacket size: " + std::to_string(init_packet->getSize()));
+
+        auto packet_data = init_packet->serialize();
+
+        log_connection_event("DEBUG: Actual serialized size: " + std::to_string(packet_data.size()));
+
+        // 🔍 DEBUG: Manual calculation
+        size_t expected_size = 1 + 4 + 4 + rsa_pair.getScrambledModulus().size() + 16 + blowfish_key.size() + 1;
+        log_connection_event("DEBUG: Manual calculation: 1+4+4+" + std::to_string(rsa_pair.getScrambledModulus().size()) +
+                             "+16+" + std::to_string(blowfish_key.size()) + "+1 = " + std::to_string(expected_size));
+
+        if (packet_data.empty())
+        {
+            log_connection_event("ERROR: InitPacket serialize() returned empty data!");
+            return;
+        }
+
+        // Send Init packet as pure raw data (bypass all encryption)
+        send_init_packet_raw(packet_data);
 
         set_state(State::INIT_SENT);
-        log_connection_event("Init packet sent");
+        log_connection_event("Init packet sent (raw, unencrypted, no checksum)");
     }
     catch (const std::exception &e)
     {
         log_connection_event("Error sending init packet: " + std::string(e.what()));
+        force_disconnect();
+    }
+}
+
+void ClientConnection::send_init_packet_raw(const std::vector<uint8_t> &packet_data)
+{
+    if (!is_connected())
+    {
+        return;
+    }
+
+    try
+    {
+        log_connection_event("DEBUG: Input packet_data size: " + std::to_string(packet_data.size()) + " bytes");
+
+        // ✅ FIX: Extract raw content (skip first 2 bytes which are the length header)
+        std::vector<uint8_t> raw_content;
+        if (packet_data.size() >= 2)
+        {
+            raw_content.assign(packet_data.begin() + 2, packet_data.end());
+            log_connection_event("DEBUG: Extracted raw content size: " + std::to_string(raw_content.size()) + " bytes");
+        }
+        else
+        {
+            log_connection_event("ERROR: packet_data too small to contain header");
+            return;
+        }
+
+        std::vector<uint8_t> final_data;
+
+        // Add ONLY the L2 length header (2 bytes little-endian)
+        uint16_t total_length = static_cast<uint16_t>(raw_content.size() + PACKET_SIZE_BYTES);
+        final_data.push_back(static_cast<uint8_t>(total_length & 0xFF));
+        final_data.push_back(static_cast<uint8_t>((total_length >> 8) & 0xFF));
+
+        log_connection_event("DEBUG: Length header: " + std::to_string(total_length) + " (0x" +
+                             std::to_string(total_length) + ")");
+        log_connection_event("DEBUG: After header, final_data size: " + std::to_string(final_data.size()));
+
+        // Add packet data (UNTOUCHED - no encryption, no checksum, no padding)
+        final_data.insert(final_data.end(), raw_content.begin(), raw_content.end());
+
+        log_connection_event("DEBUG: After adding packet data, final_data size: " + std::to_string(final_data.size()));
+        log_connection_event("DEBUG: Expected: 172 bytes, Actual: " + std::to_string(final_data.size()) + " bytes");
+
+        size_t packet_size = final_data.size();
+
+        // Send directly to socket (bypass all processing)
+        auto data_ptr = std::make_shared<std::vector<uint8_t>>(std::move(final_data));
+        do_write(data_ptr);
+
+        log_connection_event("Raw Init packet sent (data_ptr->size()): " + std::to_string(data_ptr->size()) + " bytes (expected: 172)");
+        log_connection_event("Raw Init packet sent (packet_size): " + std::to_string(packet_size) + " bytes (expected: 172)");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error sending raw init packet: " + std::string(e.what()));
         force_disconnect();
     }
 }
@@ -332,20 +411,15 @@ void ClientConnection::process_read_data(size_t bytes_available)
 
         if (reading_header_)
         {
-            // Try to read packet header (2 bytes)
             if (try_read_packet_header(data + processed, bytes_available - processed, consumed))
             {
                 reading_header_ = false;
-                // Enable encryption after init packet is sent
-                if (is_state(State::INIT_SENT) && !login_encryption_)
-                {
-                    enable_login_encryption(blowfish_key_);
-                }
+                // ✅ REMOVED: Don't enable encryption here automatically
+                // Rust only enables encryption AFTER receiving first client packet
             }
         }
         else
         {
-            // Try to read packet body
             std::vector<uint8_t> complete_packet;
             if (try_read_packet_body(data + processed, bytes_available - processed, consumed, complete_packet))
             {
@@ -353,14 +427,19 @@ void ClientConnection::process_read_data(size_t bytes_available)
                 expected_packet_size_ = 0;
                 partial_packet_buffer_.clear();
 
-                // Process complete packet
+                // ✅ RUST-STYLE: Enable encryption only AFTER receiving first client packet
+                if (is_state(State::INIT_SENT) && !login_encryption_)
+                {
+                    enable_login_encryption(blowfish_key_);
+                    log_connection_event("Login encryption enabled (Rust-style timing)");
+                }
+
                 handle_complete_packet(std::move(complete_packet));
             }
         }
 
         if (consumed == 0)
         {
-            // No progress made, need more data
             break;
         }
 
@@ -439,8 +518,8 @@ void ClientConnection::handle_write(const boost::system::error_code &error, size
         return;
     }
 
-    // Log successful packet transmission
-    log_connection_event("Sent packet: " + std::to_string(bytes_transferred) + " bytes");
+    // 🔧 FIX: Add context to differentiate raw vs encrypted packets
+    log_connection_event("Sent packet: " + std::to_string(bytes_transferred) + " bytes [write completed]");
 }
 
 // =============================================================================
