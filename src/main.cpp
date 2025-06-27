@@ -9,39 +9,10 @@
 #include "login_encryption.hpp"
 #include "session_key.hpp"
 #include "game_client_encryption.hpp"
+#include "packet.hpp"
+#include "packet_buffer.hpp"
 
 using boost::asio::ip::tcp;
-
-void test_blowfish_openssl()
-{
-    Blowfish::runTests();
-}
-
-void test_rsa_manager()
-{
-    // Run comprehensive RSA test suite
-    RSAManager::runAllTests();
-}
-
-void test_l2_checksum()
-{
-    L2Checksum::runTests();
-}
-
-void test_login_encryption()
-{
-    LoginEncryption::runTests();
-}
-
-void test_session_key()
-{
-    SessionKey::runTests();
-}
-
-void test_game_client_encryption()
-{
-    GameClientEncryption::runTests();
-}
 
 void start_tcp_server()
 {
@@ -88,25 +59,35 @@ void start_tcp_server()
     }
 }
 
+void run_all_tests()
+{
+    std::cout << "\n"
+              << std::string(60, '=') << std::endl;
+    std::cout << "        L2 MIDDLEWARES - CRYPTOGRAPHIC TEST SUITE" << std::endl;
+    std::cout << std::string(60, '=') << std::endl;
+
+    // Test cryptographic components
+    Blowfish::runTests();
+    GameClientEncryption::runTests();
+    L2Checksum::runTests();
+    LoginEncryption::runTests();
+    SessionKey::runTests();
+    RSAManager::runAllTests();
+
+    // Test packet layer components
+    PacketUtils::runTests();
+    ReadablePacketBuffer::runTests();
+    SendablePacketBuffer::runTests();
+
+    std::cout << std::string(60, '=') << std::endl;
+    std::cout << "        ALL COMPONENT TESTS COMPLETED" << std::endl;
+    std::cout << std::string(60, '=') << std::endl;
+}
+
 int main()
 {
-    // Test OpenSSL Blowfish functionality
-    test_blowfish_openssl();
-
-    // Test RSA manager functionality
-    test_rsa_manager();
-
-    // Test L2 checksum functionality
-    test_l2_checksum();
-
-    // Test Login encryption functionality (Rust compatibility)
-    test_login_encryption();
-
-    // Test Session Key management (Rust compatibility)
-    test_session_key();
-
-    // Test Game Client Encryption (Rust compatibility)
-    test_game_client_encryption();
+    // Run comprehensive tests first
+    run_all_tests();
 
     std::cout << "\n"
               << std::string(50, '=') << std::endl;

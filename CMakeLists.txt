@@ -26,6 +26,8 @@ add_executable(l2_middlewares
     src/login_encryption.cpp
     src/session_key.cpp
     src/game_client_encryption.cpp
+    src/packet.cpp
+    src/packet_buffer.cpp
 )
 
 target_link_libraries(l2_middlewares
