@@ -1,0 +1,9 @@
+{
+  "name": "l2middlewares",
+  "version": "0.0.1",
+  "dependencies": [
+    "boost-asio",
+    "openssl",
+    "nlohmann-json"
+  ]
+}
