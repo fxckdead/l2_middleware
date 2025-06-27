@@ -58,10 +58,17 @@ InitPacket InitPacket::create(int32_t sessionId,
 // Generate default GameGuard authentication data (16 bytes of constants)
 std::vector<uint8_t> InitPacket::generateDefaultGameGuardData()
 {
-    // Default GameGuard data - typically constant values for L2
+    // GameGuard magical constants (REQUIRED by L2 client!)
+    // These exact values match the working Rust implementation
     return std::vector<uint8_t>{
-        0x6C, 0x6F, 0x67, 0x69, 0x6E, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        // 0x29DD954E (little-endian)
+        0x4E, 0x95, 0xDD, 0x29,
+        // 0x77C39CFC (little-endian)
+        0xFC, 0x9C, 0xC3, 0x77,
+        // 0x97ADB620 (little-endian)
+        0x20, 0xB6, 0xAD, 0x97,
+        // 0x07BDE0F7 (little-endian)
+        0xF7, 0xE0, 0xBD, 0x07};
 }
 
 // Validate packet data
