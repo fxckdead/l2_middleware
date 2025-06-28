@@ -107,8 +107,26 @@ void LoginClientConnection::send_server_list()
 
 void LoginClientConnection::send_play_ok()
 {
-    // TODO: Implement PlayOk packet
-    log_connection_event("Play OK requested (not implemented)");
+    if (!is_login_state(LoginState::SERVER_LIST_SENT))
+    {
+        log_connection_event("Cannot send PlayOk - client not in SERVER_LIST_SENT state");
+        return;
+    }
+
+    try
+    {
+        // Create and send PlayOk response with session key (matches Rust behavior)
+        auto play_ok_response = PacketFactory::createPlayOkResponse(session_key_);
+        send_packet(std::move(play_ok_response));
+
+        set_login_state(LoginState::PLAY_OK_SENT);
+        log_connection_event("PlayOk response sent with session keys");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error sending PlayOk: " + std::string(e.what()));
+        send_login_fail(0x01);
+    }
 }
 
 void LoginClientConnection::handle_complete_packet(std::vector<uint8_t> packet_data)
@@ -188,8 +206,14 @@ void LoginClientConnection::handle_complete_packet(std::vector<uint8_t> packet_d
                     break;
 
                 case 0x02: // RequestGSLogin
-                    log_connection_event("Received game server login");
-                    send_play_ok();
+                    if (auto gs_login_packet = dynamic_cast<RequestGSLogin *>(packet.get()))
+                    {
+                        handle_request_gs_login_packet(std::shared_ptr<RequestGSLogin>(gs_login_packet, [](RequestGSLogin *) {}));
+                    }
+                    else
+                    {
+                        log_connection_event("Failed to cast RequestGSLogin packet");
+                    }
                     break;
 
                 default:
@@ -293,13 +317,16 @@ void LoginClientConnection::handle_auth_login_packet(std::shared_ptr<AuthLoginPa
 
     // Store session information
     set_account_name(packet->getUsername());
+    set_session_key(sessionKey);  // CRITICAL: Store the session key for later validation!
     set_login_state(LoginState::AUTHENTICATED);
 
     // Send LoginOk response
     auto login_ok_response = PacketFactory::createLoginOkResponse(sessionKey);
     send_packet(std::move(login_ok_response));
 
-    log_connection_event("Login successful, LoginOk response sent");
+    log_connection_event("Login successful, LoginOk response sent - Session keys: login_ok1=" + 
+                         std::to_string(sessionKey.login_ok1) + ", login_ok2=" + std::to_string(sessionKey.login_ok2) +
+                         ", play_ok1=" + std::to_string(sessionKey.play_ok1) + ", play_ok2=" + std::to_string(sessionKey.play_ok2));
 }
 
 void LoginClientConnection::handle_auth_gg_packet(std::shared_ptr<RequestAuthGG> packet)
@@ -340,6 +367,46 @@ void LoginClientConnection::handle_request_server_list_packet(std::shared_ptr<Re
     // TODO: Validate the loginOk values against stored session if needed
     // For now, just send the server list
     send_server_list();
+}
+
+void LoginClientConnection::handle_request_gs_login_packet(std::shared_ptr<RequestGSLogin> packet)
+{
+    log_connection_event("Received game server login request - Server ID: " + std::to_string(packet->getServerId()) +
+                         ", SessionKey1: " + std::to_string(packet->getSessionKey1()) +
+                         ", SessionKey2: " + std::to_string(packet->getSessionKey2()));
+
+    // Validate that client is in the correct state (matches Rust handler behavior)
+    if (!is_login_state(LoginState::SERVER_LIST_SENT))
+    {
+        log_connection_event("Game server login requested but client not in SERVER_LIST_SENT state");
+        send_login_fail(0x01);
+        return;
+    }
+
+    // Validate session key (matches Rust check_session implementation)
+    if (!packet->checkSession(session_key_))
+    {
+        log_connection_event("Session key validation failed for game server login - "
+                             "Expected: login_ok1=" + std::to_string(session_key_.login_ok1) + 
+                             ", login_ok2=" + std::to_string(session_key_.login_ok2) + 
+                             " | Received: s_key_1=" + std::to_string(packet->getSessionKey1()) + 
+                             ", s_key_2=" + std::to_string(packet->getSessionKey2()));
+        send_login_fail(0x01);
+        return;
+    }
+
+    // TODO: Validate that the requested server ID exists and is available
+    auto* game_server_manager = get_game_server_manager();
+    if (!game_server_manager)
+    {
+        log_connection_event("GameServerManager not available");
+        send_login_fail(0x01);
+        return;
+    }
+
+    // For now, accept any valid server selection and send PlayOk (matches Rust behavior)
+    send_play_ok();
+    log_connection_event("Game server login successful for server ID: " + std::to_string(packet->getServerId()));
 }
 
 GameServerManager* LoginClientConnection::get_game_server_manager() const

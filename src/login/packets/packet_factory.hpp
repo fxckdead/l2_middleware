@@ -4,11 +4,13 @@
 #include "../../core/network/packet_buffer.hpp"
 #include "requests/auth_login_packet.hpp"
 #include "requests/request_server_list.hpp"
+#include "requests/request_gs_login.hpp"
 #include "responses/init_packet.hpp"
 #include "requests/request_auth_gg.hpp"
 #include "responses/auth_gg_response.hpp"
 #include "responses/login_ok_response.hpp"
 #include "responses/server_list_response.hpp"
+#include "responses/play_ok_response.hpp"
 #include "../data/server_data.hpp"
 #include "../../core/encryption/rsa_manager.hpp"
 #include <memory>
@@ -50,6 +52,8 @@ public:
     static std::unique_ptr<ServerListResponse> createServerListResponseWithCharInfo(
         const std::vector<ServerData>& servers,
         const std::unordered_map<uint8_t, GSCharsInfo>& charsOnServer);
+
+    static std::unique_ptr<PlayOkResponse> createPlayOkResponse(const SessionKey &sessionKey);
 
 
 private:

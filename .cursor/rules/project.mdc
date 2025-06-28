@@ -17,3 +17,91 @@ Project is divided into Core, Login and Server modules.
 
 # AVOID
 1. never say you fixed something until we can confirm it on execution or build time (I hate when you say "bug fixed!" just because you change code and no real test has been made)
+
+# Key Files and Paths Reference
+
+Based on implementing the ServerList packet handlers, here are the key paths and files that are essential for understanding and working with your L2 middlewares project:
+
+## 🏗️ Core Architecture (Most Important)
+
+### Packet System Foundation
+- `src/core/packets/packet.hpp` - Base interfaces for all packets (`ReadablePacket`, `SendablePacket`)
+- `src/core/network/packet_buffer.hpp` - Packet serialization/deserialization interfaces
+- `src/login/packets/packet_factory.hpp/cpp` - Central packet creation and RSA handling
+
+### Network Layer Foundation
+- `src/core/network/base_client_connection.hpp/cpp` - Base connection interface
+- `src/core/network/base_connection_manager.hpp/cpp` - Base connection management
+
+## 🔐 Login Server Core (High Priority)
+
+### Server Management
+- `src/login/server/login_server.hpp/cpp` - Main server entry point and lifecycle
+- `src/login/network/login_connection_manager.hpp/cpp` - Login-specific connection management
+- `src/login/network/login_client_connection.hpp/cpp` - **CRITICAL** - All client interaction logic
+
+### Data Management
+- `src/login/server/game_server_manager.hpp/cpp` - Game server registration and management
+- `src/login/data/server_data.hpp/cpp` - Core data structures (`ServerData`, enums)
+
+## 📦 Packet Implementation Patterns
+
+### Request Packets (Client → Server)
+- `src/login/packets/requests/auth_login_packet.hpp/cpp` - RSA decryption example
+- `src/login/packets/requests/request_auth_gg.hpp/cpp` - Simple packet example
+- `src/login/packets/requests/request_server_list.hpp/cpp` - Basic data packet
+
+### Response Packets (Server → Client)
+- `src/login/packets/responses/init_packet.hpp/cpp` - Complex packet with RSA keys
+- `src/login/packets/responses/login_ok_response.hpp/cpp` - Session key handling
+- `src/login/packets/responses/server_list_response.hpp/cpp` - Dynamic data serialization
+
+## 🔧 Build & Configuration
+- `CMakeLists.txt` - Project structure and dependencies
+- `vcpkg.json` - External dependencies
+
+## 📁 Directory Structure Patterns
+```
+src/
+├── core/ # Shared across login/game servers
+│ ├── packets/ # Base packet interfaces
+│ ├── network/ # Base networking classes
+│ ├── encryption/ # RSA, Blowfish, checksums
+│ └── utils/ # Session keys, utilities
+├── login/ # Login server specific
+│ ├── server/ # Server management & game server tracking
+│ ├── network/ # Login connection handling
+│ ├── packets/ # Login-specific packets
+│ │ ├── requests/ # Client → Server packets
+│ │ └── responses/ # Server → Client packets
+│ └── data/ # Login data structures
+└── game/ # Game server (future)
+```
+## 🎯 Key Learning Points for Future Work
+
+### Adding New Packets - Follow This Pattern:
+1. **Create packet classes** in `src/login/packets/requests|responses/`
+2. **Update PacketFactory** in `packet_factory.hpp/cpp`
+3. **Add handler method** in `login_client_connection.cpp`
+4. **Update switch statement** in `handle_complete_packet()`
+5. **Update CMakeLists.txt** with new source files
+
+### Most Important Files to Understand:
+1. `src/login/network/login_client_connection.cpp` - **This is the heart of all client interaction**
+2. `src/login/packets/packet_factory.cpp` - **All packet creation flows through here**
+3. `src/login/server/login_server.cpp` - **Server initialization and component wiring**
+
+### Common Integration Points:
+- **State management**: `LoginClientConnection::LoginState` enum
+- **Packet routing**: `handle_complete_packet()` switch statement
+- **Manager access**: Connection → ConnectionManager → GameServerManager chain
+- **Error handling**: `send_login_fail()` and `force_disconnect()` patterns
+
+### Encryption Flow Understanding:
+- `src/core/encryption/rsa_manager.cpp` - RSA key handling
+- `src/core/encryption/login_encryption.cpp` - Blowfish encryption
+- `src/core/encryption/l2_checksum.cpp` - Packet integrity
+
+This structure shows your project follows a **clean separation of concerns** with core networking abstractions and login-specific implementations. The packet factory pattern centralizes complex RSA handling, while the connection classes handle state management and business logic.
+
+For future conversations, focusing on these files will give the fastest understanding of how to extend functionality! 🚀

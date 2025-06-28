@@ -69,6 +69,11 @@ std::unique_ptr<ServerListResponse> PacketFactory::createServerListResponseWithC
     return std::make_unique<ServerListResponse>(servers, 0, charsOnServer);
 }
 
+std::unique_ptr<PlayOkResponse> PacketFactory::createPlayOkResponse(const SessionKey &sessionKey)
+{
+    return std::make_unique<PlayOkResponse>(sessionKey);
+}
+
 // Handle RSA decryption for login packets (matches Rust logic exactly)
 std::vector<uint8_t> PacketFactory::decryptLoginData(
     const std::vector<uint8_t> &encryptedData,
@@ -158,7 +163,21 @@ std::unique_ptr<ReadablePacket> PacketFactory::createAuthGGPacket(const std::vec
 
 std::unique_ptr<ReadablePacket> PacketFactory::createGSLoginPacket(const std::vector<uint8_t> &rawData)
 {
-    throw PacketException("GSLogin packet not yet implemented");
+    try
+    {
+        // Create a ReadablePacketBuffer from the raw data
+        ReadablePacketBuffer buffer(rawData);
+        
+        // Create RequestGSLogin and read the data (matches Rust read() implementation)
+        auto packet = std::make_unique<RequestGSLogin>();
+        packet->read(buffer);
+        
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestGSLogin packet: " + std::string(e.what()));
+    }
 }
 
 std::unique_ptr<ReadablePacket> PacketFactory::createServerListPacket(const std::vector<uint8_t> &rawData)

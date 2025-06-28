@@ -8,6 +8,7 @@
 #include "../packets/requests/auth_login_packet.hpp"
 #include "../packets/requests/request_auth_gg.hpp"
 #include "../packets/requests/request_server_list.hpp"
+#include "../packets/requests/request_gs_login.hpp"
 
 // Forward declarations
 class LoginConnectionManager;
@@ -89,6 +90,7 @@ private:
     void handle_auth_login_packet(std::shared_ptr<AuthLoginPacket> packet);
     void handle_auth_gg_packet(std::shared_ptr<RequestAuthGG> packet);
     void handle_request_server_list_packet(std::shared_ptr<RequestServerList> packet);
+    void handle_request_gs_login_packet(std::shared_ptr<RequestGSLogin> packet);
 
     // Helper method to send raw init packet data
     void send_init_packet_raw(const std::vector<uint8_t> &packet_data);

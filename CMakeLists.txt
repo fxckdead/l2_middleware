@@ -84,9 +84,11 @@ add_executable(L2LoginServer
     src/login/packets/requests/auth_login_packet.cpp
     src/login/packets/requests/request_auth_gg.cpp
     src/login/packets/requests/request_server_list.cpp
+    src/login/packets/requests/request_gs_login.cpp
     src/login/packets/responses/auth_gg_response.cpp
     src/login/packets/responses/login_ok_response.cpp
     src/login/packets/responses/server_list_response.cpp
+    src/login/packets/responses/play_ok_response.cpp
     src/login/packets/packet_factory.cpp
 )
 
