@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# About this repo:
+This project is a TCP Server for Login server and Game server for Lineage2 game. It's an emulation based on a known Rust project that is on development. I will be refering to that project as the RUST project or similar.
+
+# How to work with me:
+0. On our first ever message always take a look into `src/` folder to have a full context of our current implementation.
+1. Never do a whole project restructure without asking me (if you plan to create or edit more than 5 files you need to tell me first, and give me a reason)
+2. I like to do small steps at a time, this way I can follow you and understand what are you doing.
+3. I'm a senior software eng with more than 10 years of exp, but I'm not a machine like you.
+4. prefer composition over inheritance
+
+# AVOID
+1. never say you fixed something until we can confirm it on execution or build time (I hate when you say "bug fixed!" just because you change code and no real test has been made)
+@
