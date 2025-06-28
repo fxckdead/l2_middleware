@@ -95,14 +95,15 @@ add_executable(L2LoginServer
 target_link_libraries(L2LoginServer L2Core)
 
 # ============================================================================
-# Game Server Executable (Future)
+# Game Server Executable
 # ============================================================================
-# add_executable(L2GameServer
-#     src/game/main.cpp  # Future game server entry point
-# )
-# 
-# target_link_libraries(L2GameServer L2Core)
+add_executable(L2GameServer
+    src/game/main.cpp
+    src/game/server/game_server.cpp
+)
+
+target_link_libraries(L2GameServer L2Core)
 
 # Set output names
 set_target_properties(L2LoginServer PROPERTIES OUTPUT_NAME "l2_login_server")
-# set_target_properties(L2GameServer PROPERTIES OUTPUT_NAME "l2_game_server")
+set_target_properties(L2GameServer PROPERTIES OUTPUT_NAME "l2_game_server")
