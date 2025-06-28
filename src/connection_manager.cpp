@@ -1,6 +1,7 @@
 #include "connection_manager.hpp"
 #include "init_packet.hpp"
 #include "auth_login_packet.hpp"
+#include "packet_factory.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -436,7 +437,7 @@ void ConnectionManager::handle_packet_from_connection(std::shared_ptr<ReadablePa
             if (auto auth_packet = std::dynamic_pointer_cast<AuthLoginPacket>(packet))
             {
                 log_connection_event("Received login request from " + connection->get_remote_address() +
-                                     " - User: " + auth_packet->getUsername());
+                                     " - User: " + auth_packet->getUsername() + " - Password: " + auth_packet->getPassword());
 
                 // TODO: Validate credentials against database
                 // For now, accept any login
@@ -450,8 +451,33 @@ void ConnectionManager::handle_packet_from_connection(std::shared_ptr<ReadablePa
 
         case 0x07: // RequestAuthGG (GameGuard)
         {
-            log_connection_event("Received GameGuard auth from " + connection->get_remote_address());
-            // TODO: Implement GameGuard response
+            if (auto auth_gg_packet = std::dynamic_pointer_cast<RequestAuthGG>(packet))
+            {
+                log_connection_event("Received GameGuard auth from " + connection->get_remote_address() +
+                                     " - Session ID: " + std::to_string(auth_gg_packet->getSessionId()));
+
+                // Validate session ID matches connection's session ID
+                if (auth_gg_packet->getSessionId() != connection->get_session_id())
+                {
+                    log_connection_event("AuthGG session ID mismatch for " + connection->get_remote_address() +
+                                         " - Expected: " + std::to_string(connection->get_session_id()) +
+                                         ", Got: " + std::to_string(auth_gg_packet->getSessionId()));
+
+                    // TODO: Send login fail packet (matches Rust behavior)
+                    connection->force_disconnect();
+                    break;
+                }
+
+                // Create and send AuthGG response
+                auto auth_gg_response = PacketFactory::createAuthGGResponse(connection->get_session_id());
+                connection->send_packet(std::move(auth_gg_response));
+
+                log_connection_event("AuthGG validated and response sent to " + connection->get_remote_address());
+            }
+            else
+            {
+                log_connection_event("Failed to cast AuthGG packet from " + connection->get_remote_address());
+            }
             break;
         }
 

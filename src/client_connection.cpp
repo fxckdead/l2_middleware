@@ -617,13 +617,22 @@ std::vector<uint8_t> ClientConnection::prepare_packet_for_transmission(const std
      * └─────────────┴───────────────────────────────────────┘
      */
 
-    std::vector<uint8_t> transmission_data = packet_data;
+    // Step 1: Extract content only (remove the length header from serialize())
+    std::vector<uint8_t> content_only;
+    if (packet_data.size() >= 2)
+    {
+        content_only.assign(packet_data.begin() + 2, packet_data.end());
+    }
+    else
+    {
+        throw std::runtime_error("Packet data too small to contain header");
+    }
 
-    // Step 1: Encrypt the packet (adds checksum + padding + encryption)
-    encrypt_outgoing_packet(transmission_data);
+    // Step 2: Encrypt the content (adds checksum + padding + encryption)
+    encrypt_outgoing_packet(content_only);
 
-    // Step 2: Add L2 packet length header (2 bytes, little-endian)
-    uint16_t total_length = static_cast<uint16_t>(transmission_data.size() + PACKET_SIZE_BYTES);
+    // Step 3: Add L2 packet length header (2 bytes, little-endian)
+    uint16_t total_length = static_cast<uint16_t>(content_only.size() + PACKET_SIZE_BYTES);
 
     std::vector<uint8_t> final_data;
     final_data.reserve(total_length);
@@ -633,7 +642,7 @@ std::vector<uint8_t> ClientConnection::prepare_packet_for_transmission(const std
     final_data.push_back(static_cast<uint8_t>((total_length >> 8) & 0xFF)); // High byte
 
     // Add encrypted packet data
-    final_data.insert(final_data.end(), transmission_data.begin(), transmission_data.end());
+    final_data.insert(final_data.end(), content_only.begin(), content_only.end());
 
     return final_data;
 }

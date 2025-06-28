@@ -47,6 +47,11 @@ std::unique_ptr<InitPacket> PacketFactory::createInitPacket(
     return std::make_unique<InitPacket>(sessionId, rsaPair, blowfishKey);
 }
 
+std::unique_ptr<AuthGGResponse> PacketFactory::createAuthGGResponse(int32_t sessionId)
+{
+    return std::make_unique<AuthGGResponse>(sessionId);
+}
+
 // Handle RSA decryption for login packets (matches Rust logic exactly)
 std::vector<uint8_t> PacketFactory::decryptLoginData(
     const std::vector<uint8_t> &encryptedData,
@@ -118,10 +123,20 @@ std::unique_ptr<AuthLoginPacket> PacketFactory::createAuthLoginPacket(
     }
 }
 
-// Placeholder implementations for future packet types
+// Create AuthGG packet (no decryption needed, just session ID validation)
 std::unique_ptr<ReadablePacket> PacketFactory::createAuthGGPacket(const std::vector<uint8_t> &rawData)
 {
-    throw PacketException("AuthGG packet not yet implemented");
+    try
+    {
+        // Create RequestAuthGG from raw data (no RSA decryption needed)
+        RequestAuthGG tempPacket = RequestAuthGG::fromRawData(rawData);
+
+        return std::make_unique<RequestAuthGG>(tempPacket.getSessionId());
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create AuthGG packet: " + std::string(e.what()));
+    }
 }
 
 std::unique_ptr<ReadablePacket> PacketFactory::createGSLoginPacket(const std::vector<uint8_t> &rawData)

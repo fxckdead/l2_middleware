@@ -4,6 +4,8 @@
 #include "packet_buffer.hpp"
 #include "auth_login_packet.hpp"
 #include "init_packet.hpp"
+#include "request_auth_gg.hpp"
+#include "auth_gg_response.hpp"
 #include "rsa_manager.hpp"
 #include <memory>
 #include <vector>
@@ -33,6 +35,8 @@ public:
         int32_t sessionId,
         const ScrambledRSAKeyPair &rsaPair,
         const std::vector<uint8_t> &blowfishKey);
+
+    static std::unique_ptr<AuthGGResponse> createAuthGGResponse(int32_t sessionId);
 
     // Test function
     static void runTests();

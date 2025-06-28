@@ -11,6 +11,8 @@
 
 #include "client_connection.hpp"
 #include "rsa_manager.hpp"
+#include "request_auth_gg.hpp"
+#include "auth_gg_response.hpp"
 
 // Forward declarations
 class ClientConnection;
