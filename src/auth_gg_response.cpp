@@ -32,19 +32,13 @@ void AuthGGResponse::write(SendablePacketBuffer &buffer)
     buffer.writeInt32(0); // GameGuard placeholder 2
     buffer.writeInt32(0); // GameGuard placeholder 3
     buffer.writeInt32(0); // GameGuard placeholder 4
-
-    // Add 3 padding bytes to make total content 24 bytes (multiple of 4)
-    // Content: 1 (opcode) + 4 (session_id) + 16 (placeholders) + 3 (padding) = 24 bytes
-    buffer.writeUInt8(0); // Padding byte 1
-    buffer.writeUInt8(0); // Padding byte 2
-    buffer.writeUInt8(0); // Padding byte 3
 }
 
 size_t AuthGGResponse::getSize() const
 {
-    // Calculate total packet size:
-    // 1 (opcode) + 4 (session_id) + 16 (4 zero int32s) + 3 (padding) = 24 bytes
-    return 1 + 4 + 16 + 3;
+    // Calculate total packet size (without padding):
+    // 1 (opcode) + 4 (session_id) + 16 (4 zero int32s) = 21 bytes
+    return 1 + 4 + 16;
 }
 
 // Factory method
@@ -76,7 +70,7 @@ void AuthGGResponse::runTests()
 
             if (packet.getPacketId() == 0x0B &&
                 packet.getSessionId() == testSessionId &&
-                packet.getSize() == 24 &&
+                packet.getSize() == 21 &&
                 packet.isValid())
             {
                 std::cout << "  ✅ Test 1 PASSED!" << std::endl;
@@ -104,22 +98,22 @@ void AuthGGResponse::runTests()
         {
             // Use session ID 999 to match Rust test baseline
             AuthGGResponse packet(999);
-            auto serialized = packet.serialize();
+            auto serialized = packet.serialize(true, 4); // Use automatic 4-byte padding
 
-            // C++ version with padding: [26, 0, 11, 231, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            // Total size: 26 bytes (2-byte length header + 24 bytes content)
+            // C++ version with automatic 4-byte padding: [24, 0, 11, 231, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            // Total size: 24 bytes (2-byte length header + 21 bytes content + 1 byte automatic padding)
             std::vector<uint8_t> expected = {
-                26, 0,        // Length: 26 bytes total
+                24, 0,        // Length: 24 bytes total
                 11,           // Opcode: 0x0B
                 231, 3, 0, 0, // Session ID: 999 (little-endian)
                 0, 0, 0, 0,   // GameGuard placeholder 1
                 0, 0, 0, 0,   // GameGuard placeholder 2
                 0, 0, 0, 0,   // GameGuard placeholder 3
                 0, 0, 0, 0,   // GameGuard placeholder 4
-                0, 0, 0       // Padding bytes for 4-byte alignment
+                0             // 1 byte automatic padding for 4-byte alignment (23 -> 24)
             };
 
-            std::cout << "  Serialized size: " << serialized.size() << " bytes (expected: 26)" << std::endl;
+            std::cout << "  Serialized size: " << serialized.size() << " bytes (expected: 24)" << std::endl;
             std::cout << "  Serialized data: ";
             for (size_t i = 0; i < std::min(serialized.size(), size_t(10)); ++i)
             {
@@ -181,10 +175,10 @@ void AuthGGResponse::runTests()
             for (int32_t sessionId : testSessionIds)
             {
                 AuthGGResponse packet(sessionId);
-                auto serialized = packet.serialize();
+                auto serialized = packet.serialize(true, 4); // Use automatic 4-byte padding
 
-                // Should always be 26 bytes total (24 content + 2 header)
-                if (serialized.size() != 26)
+                // Should always be 24 bytes total (21 content + 2 header + 1 padding)
+                if (serialized.size() != 24)
                 {
                     std::cout << "  ❌ Session ID " << sessionId << " failed size test" << std::endl;
                     test4Passed = false;

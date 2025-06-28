@@ -101,7 +101,7 @@ public:
     void writePadding();    // Adds padding for 8-byte alignment
 
     // Data access
-    std::vector<uint8_t> getData(bool withPadding = false);
+    std::vector<uint8_t> getData(bool withPadding = false, size_t alignment = 8);
     std::vector<uint8_t> take();                   // Moves data out, finalizes packet
     uint8_t *getDataMut(bool withPadding = false); // Mutable access
 

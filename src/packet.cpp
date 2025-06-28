@@ -6,9 +6,14 @@
 // SendablePacket default implementation
 std::vector<uint8_t> SendablePacket::serialize(bool withPadding)
 {
+    return serialize(withPadding, 8); // Default to 8-byte alignment for backward compatibility
+}
+
+std::vector<uint8_t> SendablePacket::serialize(bool withPadding, size_t alignment)
+{
     SendablePacketBuffer buffer;
     write(buffer);
-    return buffer.getData(withPadding);
+    return buffer.getData(withPadding, alignment);
 }
 
 // ReadablePacket factory method (basic implementation)

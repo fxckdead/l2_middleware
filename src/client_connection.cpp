@@ -145,8 +145,8 @@ void ClientConnection::send_packet(std::unique_ptr<SendablePacket> packet)
 
     try
     {
-        // Serialize the packet
-        auto packet_data = packet->serialize();
+        // Serialize the packet with 4-byte padding for checksum compatibility
+        auto packet_data = packet->serialize(true, 4);
         send_raw_packet(packet_data);
     }
     catch (const std::exception &e)

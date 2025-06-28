@@ -63,6 +63,7 @@ public:
 
     // Get serialized packet data
     virtual std::vector<uint8_t> serialize(bool withPadding = false);
+    virtual std::vector<uint8_t> serialize(bool withPadding, size_t alignment);
 
     // Get packet size
     virtual size_t getSize() const = 0;

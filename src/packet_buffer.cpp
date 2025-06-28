@@ -202,15 +202,17 @@ void SendablePacketBuffer::writePacketSize()
     m_sizeWritten = true;
 }
 
-std::vector<uint8_t> SendablePacketBuffer::getData(bool withPadding)
+std::vector<uint8_t> SendablePacketBuffer::getData(bool withPadding, size_t alignment)
 {
     writePacketSize();
     std::vector<uint8_t> result = m_data;
 
-    if (withPadding)
+    if (withPadding && alignment > 0)
     {
-        // Add padding for 8-byte alignment (Blowfish requirement)
-        size_t padding = (8 - (result.size() % 8)) % 8;
+        // Calculate padding based on content size (excluding 2-byte header)
+        size_t content_size = result.size() - 2; // Remove header size from calculation
+        size_t padding = (alignment - (content_size % alignment)) % alignment;
+
         result.resize(result.size() + padding, 0);
     }
 

@@ -39,19 +39,13 @@ void LoginOkResponse::write(SendablePacketBuffer &buffer)
     {
         buffer.writeUInt8(0x00);
     }
-
-    // Add 3 padding bytes to make total content 52 bytes (multiple of 4)
-    // Content: 1 (opcode) + 4 (login_ok1) + 4 (login_ok2) + 24 (zeros/constant) + 16 (zero bytes) + 3 (padding) = 52 bytes
-    buffer.writeUInt8(0); // Padding byte 1
-    buffer.writeUInt8(0); // Padding byte 2
-    buffer.writeUInt8(0); // Padding byte 3
 }
 
 size_t LoginOkResponse::getSize() const
 {
-    // Calculate total packet size:
-    // 1 (opcode) + 4 (login_ok1) + 4 (login_ok2) + 4*6 (zeros/constant) + 16 (zero bytes) + 3 (padding) = 52 bytes
-    return 1 + 4 + 4 + 24 + 16 + 3;
+    // Calculate total packet size (without padding):
+    // 1 (opcode) + 4 (login_ok1) + 4 (login_ok2) + 4*6 (zeros/constant) + 16 (zero bytes) = 49 bytes
+    return 1 + 4 + 4 + 24 + 16;
 }
 
 // Factory method
@@ -82,7 +76,7 @@ void LoginOkResponse::runTests()
             LoginOkResponse packet(testKey);
 
             if (packet.getPacketId() == 0x03 &&
-                packet.getSize() == 52 &&
+                packet.getSize() == 49 &&
                 packet.getSessionKey().login_ok1 == 0x12345678 &&
                 packet.getSessionKey().login_ok2 == 0x87654321 &&
                 packet.isValid())
@@ -112,12 +106,12 @@ void LoginOkResponse::runTests()
             // Use exact test data from Rust test_login_ok
             SessionKey testKey(7, 6, 9, 8); // play_ok1=7, play_ok2=6, login_ok1=9, login_ok2=8
             LoginOkResponse packet(testKey);
-            auto serialized = packet.serialize();
+            auto serialized = packet.serialize(true, 4); // Use automatic 4-byte padding
 
-            // C++ version with padding for 4-byte alignment: [54, 0, 3, 9, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 234, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            // Total size: 54 bytes (2-byte length header + 52 bytes content)
+            // C++ version with automatic 4-byte padding: [52, 0, 3, 9, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 234, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            // Total size: 52 bytes (2-byte length header + 49 bytes content + 1 byte automatic padding)
             std::vector<uint8_t> expected = {
-                54, 0,        // Length: 54 bytes total
+                52, 0,        // Length: 52 bytes total
                 3,            // Opcode: 0x03
                 9, 0, 0, 0,   // login_ok1: 9 (little-endian)
                 8, 0, 0, 0,   // login_ok2: 8 (little-endian)
@@ -129,10 +123,10 @@ void LoginOkResponse::runTests()
                 0, 0, 0, 0,   // Zero padding
                 // 16 zero bytes
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                // 3 padding bytes for 4-byte alignment
-                0, 0, 0};
+                // 1 byte automatic padding for 4-byte alignment (51 -> 52)
+                0};
 
-            std::cout << "  Serialized size: " << serialized.size() << " bytes (expected: 54)" << std::endl;
+            std::cout << "  Serialized size: " << serialized.size() << " bytes (expected: 52)" << std::endl;
             std::cout << "  Serialized data: ";
             for (size_t i = 0; i < std::min(serialized.size(), size_t(10)); ++i)
             {
@@ -214,10 +208,10 @@ void LoginOkResponse::runTests()
             for (const auto &key : testKeys)
             {
                 LoginOkResponse packet(key);
-                auto serialized = packet.serialize();
+                auto serialized = packet.serialize(true, 4); // Use automatic 4-byte padding
 
-                // Should always be 54 bytes total (52 content + 2 header)
-                if (serialized.size() != 54)
+                // Should always be 52 bytes total (49 content + 2 header + 1 padding)
+                if (serialized.size() != 52)
                 {
                     std::cout << "  ❌ Session key (" << key.login_ok1 << ", " << key.login_ok2
                               << ") failed size test" << std::endl;
