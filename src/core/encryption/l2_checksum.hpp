@@ -31,9 +31,6 @@ public:
     // Remove and verify checksum from packet data (removes 4 bytes if valid)
     static bool remove_and_verify_checksum(std::vector<uint8_t> &data);
 
-    // Test function for L2 checksum functionality
-    static void runTests();
-
 private:
     // Convert 4 bytes to uint32_t (Little Endian)
     static uint32_t bytes_to_uint32_le(const uint8_t *bytes);

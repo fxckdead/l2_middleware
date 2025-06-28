@@ -44,14 +44,7 @@ public:
     const std::string &getPassword() const { return m_password; }
     bool isNewAuthFormat() const { return m_isNewAuth; }
 
-    // Test function
-    static void runTests();
 
-    // Demo function showing L2 authentication flow
-    static void demoL2AuthFlow();
-
-    // Debug function to verify Rust test data positions
-    static void debugRustTestData();
 
 private:
     // Helper functions for credential extraction

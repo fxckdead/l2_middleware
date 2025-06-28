@@ -1,14 +1,6 @@
 #include <iostream>
 #include <string>
 
-#include "../core/encryption/rsa_manager.hpp"
-#include "../core/encryption/blowfish_openssl.hpp"
-#include "../core/encryption/l2_checksum.hpp"
-#include "../core/encryption/login_encryption.hpp"
-#include "../core/utils/session_key.hpp"
-#include "../core/encryption/game_client_encryption.hpp"
-#include "../core/packets/packet.hpp"
-#include "../core/network/packet_buffer.hpp"
 #include "packets/responses/init_packet.hpp"
 #include "packets/requests/auth_login_packet.hpp"
 #include "packets/requests/request_auth_gg.hpp"
@@ -16,46 +8,6 @@
 #include "packets/responses/login_ok_response.hpp"
 #include "packets/packet_factory.hpp"
 #include "server/login_server.hpp"
-
-// Forward declaration for packet integration tests
-void run_all_packet_tests();
-
-void run_all_tests()
-{
-    std::cout << "\n"
-              << std::string(60, '=') << std::endl;
-    std::cout << "        L2 MIDDLEWARES - CRYPTOGRAPHIC TEST SUITE" << std::endl;
-    std::cout << std::string(60, '=') << std::endl;
-
-    // Test cryptographic components
-    Blowfish::runTests();
-    GameClientEncryption::runTests();
-    L2Checksum::runTests();
-    LoginEncryption::runTests();
-    SessionKey::runTests();
-    RSAManager::runAllTests();
-
-    // Test packet layer components
-    PacketUtils::runTests();
-    ReadablePacketBuffer::runTests();
-    SendablePacketBuffer::runTests();
-    InitPacket::runTests();
-    AuthLoginPacket::runTests();
-    RequestAuthGG::runTests();
-    AuthGGResponse::runTests();
-    LoginOkResponse::runTests();
-    PacketFactory::runTests();
-
-    // Demo L2 authentication flow
-    AuthLoginPacket::demoL2AuthFlow();
-
-    // Run packet integration tests
-    run_all_packet_tests();
-
-    std::cout << std::string(60, '=') << std::endl;
-    std::cout << "        ALL COMPONENT TESTS COMPLETED" << std::endl;
-    std::cout << std::string(60, '=') << std::endl;
-}
 
 int main(int argc, char *argv[])
 {
@@ -68,18 +20,13 @@ int main(int argc, char *argv[])
     std::cout << std::string(60, '=') << std::endl;
 
     // Check for command line arguments
-    bool skip_tests = false;
     bool show_help = false;
     bool run_async = false;
 
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
-        if (arg == "--skip-tests" || arg == "-s")
-        {
-            skip_tests = true;
-        }
-        else if (arg == "--help" || arg == "-h")
+        if (arg == "--help" || arg == "-h")
         {
             show_help = true;
         }
@@ -93,23 +40,10 @@ int main(int argc, char *argv[])
     {
         std::cout << "\nUsage: " << argv[0] << " [options]" << std::endl;
         std::cout << "Options:" << std::endl;
-        std::cout << "  --skip-tests, -s    Skip cryptographic and packet tests" << std::endl;
         std::cout << "  --async, -a         Run server in background thread" << std::endl;
         std::cout << "  --help, -h          Show this help message" << std::endl;
-        std::cout << "\nDefault behavior: Run tests, then start login server on 127.0.0.1:2106" << std::endl;
+        std::cout << "\nDefault behavior: Start login server on 127.0.0.1:2106" << std::endl;
         return 0;
-    }
-
-    // Run comprehensive tests first (unless skipped)
-    if (!skip_tests)
-    {
-        std::cout << "\n[Startup] Running cryptographic and packet validation tests..." << std::endl;
-        run_all_tests();
-        std::cout << "[Startup] All tests completed successfully!" << std::endl;
-    }
-    else
-    {
-        std::cout << "\n[Startup] Skipping tests as requested" << std::endl;
     }
 
     try

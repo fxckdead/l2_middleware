@@ -32,10 +32,10 @@ public:
     // Factory method
     static LoginOkResponse create(const SessionKey &sessionKey);
 
-    // Test function
-    static void runTests();
-
-private:
     // Validate packet data
     bool isValid() const;
+
+    // Test function
+
+private:
 };

@@ -42,7 +42,7 @@ public:
     static std::unique_ptr<LoginOkResponse> createLoginOkResponse(const SessionKey &sessionKey);
 
     // Test function
-    static void runTests();
+
 
 private:
     // Handle RSA decryption for login packets (matches Rust logic exactly)

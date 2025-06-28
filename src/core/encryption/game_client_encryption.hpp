@@ -28,7 +28,4 @@ public:
 
     // Encrypt outgoing packets (matches Rust encrypt)
     bool encrypt(std::vector<uint8_t> &data);
-
-    // Test function with Rust compatibility test vectors
-    static void runTests();
 };

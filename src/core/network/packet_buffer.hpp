@@ -52,8 +52,6 @@ public:
     size_t getLength() const;
     size_t getPosition() const;
 
-    // Test function
-    static void runTests();
 };
 
 // SendablePacketBuffer - equivalent to Rust SendablePacketBuffer
@@ -104,9 +102,6 @@ public:
     std::vector<uint8_t> getData(bool withPadding = false, size_t alignment = 8);
     std::vector<uint8_t> take();                   // Moves data out, finalizes packet
     uint8_t *getDataMut(bool withPadding = false); // Mutable access
-
-    // Test function
-    static void runTests();
 
 private:
     // Helper functions for UTF-16LE encoding

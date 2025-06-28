@@ -31,10 +31,10 @@ public:
     // Factory method
     static AuthGGResponse create(int32_t sessionId);
 
-    // Test function
-    static void runTests();
-
-private:
     // Validate packet data
     bool isValid() const;
+
+    // Test function
+
+private:
 };

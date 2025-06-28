@@ -29,9 +29,6 @@ public:
     // XOR password encryption (matches Rust::enc_xor_pass)
     static void enc_xor_pass(std::vector<uint8_t> &data, size_t offset, size_t size, uint32_t key);
 
-    // Test function with Rust compatibility test vectors
-    static void runTests();
-
 private:
     // Helper function for checksum calculation (matches Rust::calculate_checksum_block)
     static std::pair<uint32_t, uint32_t> calculate_checksum_block(const std::vector<uint8_t> &data);

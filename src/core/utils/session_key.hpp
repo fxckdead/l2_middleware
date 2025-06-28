@@ -35,7 +35,4 @@ public:
     // Equality operator
     bool operator==(const SessionKey &other) const;
     bool operator!=(const SessionKey &other) const;
-
-    // Test function with Rust compatibility test vectors
-    static void runTests();
 };

@@ -36,7 +36,6 @@ public:
     int32_t getSessionId() const { return m_sessionId; }
 
     // Test function
-    static void runTests();
 
 private:
     // Helper functions

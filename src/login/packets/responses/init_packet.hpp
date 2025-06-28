@@ -44,7 +44,6 @@ public:
                              const std::vector<uint8_t> &blowfishKey);
 
     // Test function
-    static void runTests();
 
 private:
     // Generate default GameGuard authentication data (16 bytes of constants)

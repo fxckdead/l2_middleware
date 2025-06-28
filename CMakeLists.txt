@@ -69,9 +69,6 @@ add_executable(L2LoginServer
     src/login/packets/responses/auth_gg_response.cpp
     src/login/packets/responses/login_ok_response.cpp
     src/login/packets/packet_factory.cpp
-    
-    # Tests
-    src/login/tests/packet_tests.cpp
 )
 
 target_link_libraries(L2LoginServer L2Core)

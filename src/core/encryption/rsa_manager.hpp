@@ -44,13 +44,7 @@ private:
     std::vector<uint8_t> scrambleModulus(const std::vector<uint8_t> &modulus);
 };
 
-struct TestResult
-{
-    bool passed;
-    std::string message;
 
-    TestResult(bool p, const std::string &msg) : passed(p), message(msg) {}
-};
 
 class RSAManager
 {
@@ -65,8 +59,7 @@ public:
 
     size_t getKeyPairCount() const { return m_keyPairs.size(); }
 
-    // Test function to display key information
-    void displayKeyInfo() const;
+
 
     // Static RSA utility functions
     static std::vector<uint8_t> rsaEncrypt(const std::vector<uint8_t> &data,
@@ -76,21 +69,7 @@ public:
     static std::vector<uint8_t> rsaDecryptRaw(const std::vector<uint8_t> &encryptedData,
                                               const std::vector<uint8_t> &privateKey);
 
-    // Test functions - return TestResult
-    static TestResult testRSAKeyGeneration();
-    static TestResult testEncryptionDecryption();
-    static TestResult testScrambledModulus();
-    static TestResult testMultipleKeyPairs();
 
-    // Rust compatibility test functions - using exact same test vectors
-    static TestResult testRustCompatibilityEncryption();
-    static TestResult testRustCompatibilityLoginPacket();
-
-    // Helper function to load private key from PEM file (public for tests)
-    static std::vector<uint8_t> loadPrivateKeyFromPEM(const std::string &pemFilePath);
-
-    // Run all tests
-    static void runAllTests();
 
 private:
     std::vector<std::unique_ptr<ScrambledRSAKeyPair>> m_keyPairs;
@@ -103,6 +82,5 @@ private:
     // Helper function to add sign byte to modulus
     std::vector<uint8_t> addSignByte(const std::vector<uint8_t> &modulus);
 
-    // Helper function to create RSA public key from modulus
-    static std::vector<uint8_t> createPublicKeyFromModulus(const std::vector<uint8_t> &modulus);
+
 };

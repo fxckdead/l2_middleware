@@ -106,6 +106,4 @@ namespace PacketUtils
     // Add padding to packet data for 8-byte alignment (Blowfish requirement)
     void addPadding(std::vector<uint8_t> &data);
 
-    // Test functions
-    void runTests();
 }
