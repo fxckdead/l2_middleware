@@ -8,6 +8,7 @@
 #include <chrono>
 
 #include "../network/login_connection_manager.hpp"
+#include "game_server_manager.hpp"
 
 // Forward declarations
 class LoginConnectionManager;
@@ -37,6 +38,7 @@ private:
     boost::asio::io_context io_context_;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
     std::unique_ptr<LoginConnectionManager> connection_manager_;
+    std::unique_ptr<GameServerManager> game_server_manager_;
 
     // Server state
     Config config_;
@@ -73,6 +75,9 @@ public:
     const Config &get_config() const { return config_; }
     void set_config(const Config &config);
 
+    // Game server management
+    GameServerManager* get_game_server_manager() const { return game_server_manager_.get(); }
+
     // Signal handling (needs to be public for global signal handler)
     void handle_signal(int signal_number);
 
@@ -88,6 +93,7 @@ private:
     void log_server_event(const std::string &event) const;
     void print_startup_banner() const;
     void print_shutdown_message() const;
+    void registerTestServers(); // For testing purposes
 };
 
 // Global instance for signal handling (needed for C signal handlers)

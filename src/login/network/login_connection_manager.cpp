@@ -5,8 +5,8 @@
 // Constructor
 // =============================================================================
 
-LoginConnectionManager::LoginConnectionManager(boost::asio::io_context &io_context, const Config &config)
-    : BaseConnectionManager(io_context, config)
+LoginConnectionManager::LoginConnectionManager(boost::asio::io_context &io_context, const Config &config, GameServerManager* game_server_manager)
+    : BaseConnectionManager(io_context, config), game_server_manager_(game_server_manager)
 {
     log_connection_event("LoginConnectionManager initialized");
 }

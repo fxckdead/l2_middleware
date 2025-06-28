@@ -70,17 +70,23 @@ endif()
 add_executable(L2LoginServer
     src/login/main.cpp
     src/login/server/login_server.cpp
+    src/login/server/game_server_manager.cpp
     
     # Login-specific networking (inherits from core base classes)
     src/login/network/login_client_connection.cpp
     src/login/network/login_connection_manager.cpp
     
+    # Login data structures
+    src/login/data/server_data.cpp
+    
     # Login packets
     src/login/packets/responses/init_packet.cpp
     src/login/packets/requests/auth_login_packet.cpp
     src/login/packets/requests/request_auth_gg.cpp
+    src/login/packets/requests/request_server_list.cpp
     src/login/packets/responses/auth_gg_response.cpp
     src/login/packets/responses/login_ok_response.cpp
+    src/login/packets/responses/server_list_response.cpp
     src/login/packets/packet_factory.cpp
 )
 

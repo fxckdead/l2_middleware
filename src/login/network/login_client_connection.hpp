@@ -7,6 +7,7 @@
 #include "../packets/packet_factory.hpp"
 #include "../packets/requests/auth_login_packet.hpp"
 #include "../packets/requests/request_auth_gg.hpp"
+#include "../packets/requests/request_server_list.hpp"
 
 // Forward declarations
 class LoginConnectionManager;
@@ -47,6 +48,9 @@ public:
     LoginState get_login_state() const { return login_state_.load(); }
     bool is_login_state(LoginState expected_state) const { return get_login_state() == expected_state; }
 
+    // Access to game server manager through connection manager
+    class GameServerManager* get_game_server_manager() const;
+
     // Login-specific session management
     void set_session_key(const SessionKey &key) { session_key_ = key; }
     const SessionKey &get_session_key() const { return session_key_; }
@@ -84,6 +88,7 @@ private:
     // Login-specific packet handlers
     void handle_auth_login_packet(std::shared_ptr<AuthLoginPacket> packet);
     void handle_auth_gg_packet(std::shared_ptr<RequestAuthGG> packet);
+    void handle_request_server_list_packet(std::shared_ptr<RequestServerList> packet);
 
     // Helper method to send raw init packet data
     void send_init_packet_raw(const std::vector<uint8_t> &packet_data);

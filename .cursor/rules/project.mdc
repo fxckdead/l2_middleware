@@ -5,6 +5,7 @@ alwaysApply: true
 ---
 # About this repo:
 This project is a TCP Server for Login server and Game server for Lineage2 game. It's an emulation based on a known Rust project that is on development. I will be refering to that project as the RUST project or similar.
+Project is divided into Core, Login and Server modules.
 
 # How to work with me:
 0. On our first ever message always take a look into `src/` folder to have a full context of our current implementation.

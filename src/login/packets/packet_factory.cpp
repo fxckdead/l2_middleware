@@ -57,6 +57,18 @@ std::unique_ptr<LoginOkResponse> PacketFactory::createLoginOkResponse(const Sess
     return std::make_unique<LoginOkResponse>(sessionKey);
 }
 
+std::unique_ptr<ServerListResponse> PacketFactory::createServerListResponse(const std::vector<ServerData>& servers)
+{
+    return std::make_unique<ServerListResponse>(servers);
+}
+
+std::unique_ptr<ServerListResponse> PacketFactory::createServerListResponseWithCharInfo(
+    const std::vector<ServerData>& servers,
+    const std::unordered_map<uint8_t, GSCharsInfo>& charsOnServer)
+{
+    return std::make_unique<ServerListResponse>(servers, 0, charsOnServer);
+}
+
 // Handle RSA decryption for login packets (matches Rust logic exactly)
 std::vector<uint8_t> PacketFactory::decryptLoginData(
     const std::vector<uint8_t> &encryptedData,
@@ -151,5 +163,19 @@ std::unique_ptr<ReadablePacket> PacketFactory::createGSLoginPacket(const std::ve
 
 std::unique_ptr<ReadablePacket> PacketFactory::createServerListPacket(const std::vector<uint8_t> &rawData)
 {
-    throw PacketException("ServerList packet not yet implemented");
+    try
+    {
+        // Create a ReadablePacketBuffer from the raw data
+        ReadablePacketBuffer buffer(rawData);
+        
+        // Create RequestServerList and read the data
+        auto packet = std::make_unique<RequestServerList>();
+        packet->read(buffer);
+        
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestServerList packet: " + std::string(e.what()));
+    }
 }

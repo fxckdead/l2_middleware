@@ -3,13 +3,17 @@
 #include "../../core/packets/packet.hpp"
 #include "../../core/network/packet_buffer.hpp"
 #include "requests/auth_login_packet.hpp"
+#include "requests/request_server_list.hpp"
 #include "responses/init_packet.hpp"
 #include "requests/request_auth_gg.hpp"
 #include "responses/auth_gg_response.hpp"
 #include "responses/login_ok_response.hpp"
+#include "responses/server_list_response.hpp"
+#include "../data/server_data.hpp"
 #include "../../core/encryption/rsa_manager.hpp"
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include <cstdint>
 
 // Enumeration of client packet types (matches Rust ClientPackets enum)
@@ -41,7 +45,11 @@ public:
 
     static std::unique_ptr<LoginOkResponse> createLoginOkResponse(const SessionKey &sessionKey);
 
-    // Test function
+    static std::unique_ptr<ServerListResponse> createServerListResponse(const std::vector<ServerData>& servers);
+
+    static std::unique_ptr<ServerListResponse> createServerListResponseWithCharInfo(
+        const std::vector<ServerData>& servers,
+        const std::unordered_map<uint8_t, GSCharsInfo>& charsOnServer);
 
 
 private:

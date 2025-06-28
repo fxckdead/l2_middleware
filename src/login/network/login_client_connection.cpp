@@ -2,6 +2,8 @@
 #include "login_connection_manager.hpp"
 #include "../packets/responses/login_ok_response.hpp"
 #include "../packets/responses/auth_gg_response.hpp"
+#include "../packets/responses/server_list_response.hpp"
+#include "../server/game_server_manager.hpp"
 #include "../../core/encryption/l2_checksum.hpp"
 #include <iostream>
 #include <ctime>
@@ -70,8 +72,37 @@ void LoginClientConnection::send_login_fail(uint8_t reason)
 
 void LoginClientConnection::send_server_list()
 {
-    // TODO: Implement ServerList packet
-    log_connection_event("Server list requested (not implemented)");
+    if (!is_login_state(LoginState::AUTHENTICATED))
+    {
+        log_connection_event("Cannot send server list - client not authenticated");
+        return;
+    }
+
+    try
+    {
+        auto* game_server_manager = get_game_server_manager();
+        if (!game_server_manager)
+        {
+            log_connection_event("GameServerManager not available");
+            send_login_fail(0x01);
+            return;
+        }
+
+        // Get the server list
+        auto servers = game_server_manager->getServerList();
+        
+        // Create and send server list response
+        auto server_list_response = PacketFactory::createServerListResponse(servers);
+        send_packet(std::move(server_list_response));
+
+        set_login_state(LoginState::SERVER_LIST_SENT);
+        log_connection_event("Server list sent with " + std::to_string(servers.size()) + " servers");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error sending server list: " + std::string(e.what()));
+        send_login_fail(0x01);
+    }
 }
 
 void LoginClientConnection::send_play_ok()
@@ -146,8 +177,14 @@ void LoginClientConnection::handle_complete_packet(std::vector<uint8_t> packet_d
                     break;
 
                 case 0x05: // RequestServerList
-                    log_connection_event("Received server list request");
-                    send_server_list();
+                    if (auto server_list_packet = dynamic_cast<RequestServerList *>(packet.get()))
+                    {
+                        handle_request_server_list_packet(std::shared_ptr<RequestServerList>(server_list_packet, [](RequestServerList *) {}));
+                    }
+                    else
+                    {
+                        log_connection_event("Failed to cast RequestServerList packet");
+                    }
                     break;
 
                 case 0x02: // RequestGSLogin
@@ -285,6 +322,34 @@ void LoginClientConnection::handle_auth_gg_packet(std::shared_ptr<RequestAuthGG>
     send_packet(std::move(auth_gg_response));
 
     log_connection_event("AuthGG validated and response sent");
+}
+
+void LoginClientConnection::handle_request_server_list_packet(std::shared_ptr<RequestServerList> packet)
+{
+    log_connection_event("Received server list request - LoginOk1: " + std::to_string(packet->getLoginOk1()) +
+                         ", LoginOk2: " + std::to_string(packet->getLoginOk2()));
+
+    // Validate that client is authenticated
+    if (!is_login_state(LoginState::AUTHENTICATED))
+    {
+        log_connection_event("Server list requested but client not authenticated");
+        send_login_fail(0x01);
+        return;
+    }
+
+    // TODO: Validate the loginOk values against stored session if needed
+    // For now, just send the server list
+    send_server_list();
+}
+
+GameServerManager* LoginClientConnection::get_game_server_manager() const
+{
+    // Get the game server manager from our connection manager
+    if (auto* login_manager = dynamic_cast<LoginConnectionManager*>(manager_))
+    {
+        return login_manager->get_game_server_manager();
+    }
+    return nullptr;
 }
 
 void LoginClientConnection::send_init_packet_raw(const std::vector<uint8_t> &packet_data)

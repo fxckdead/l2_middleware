@@ -187,6 +187,9 @@ void LoginServer::initialize_server()
 {
     log_server_event("Initializing login server");
 
+    // Initialize game server manager
+    game_server_manager_ = std::make_unique<GameServerManager>();
+
     // Create login-specific connection manager
     BaseConnectionManager::Config conn_config;
     conn_config.max_connections = config_.max_connections;
@@ -194,7 +197,10 @@ void LoginServer::initialize_server()
     conn_config.enable_connection_logging = config_.enable_logging;
     conn_config.connection_timeout = config_.connection_timeout;
 
-    connection_manager_ = std::make_unique<LoginConnectionManager>(io_context_, conn_config);
+    connection_manager_ = std::make_unique<LoginConnectionManager>(io_context_, conn_config, game_server_manager_.get());
+
+    // Add some test servers for demonstration
+    registerTestServers();
 
     log_server_event("Server initialized");
 }
@@ -307,4 +313,50 @@ void LoginServer::print_shutdown_message() const
               << std::string(60, '=') << std::endl;
     std::cout << "        LOGIN SERVER SHUTDOWN COMPLETE" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
+}
+
+void LoginServer::registerTestServers()
+{
+    if (!game_server_manager_)
+    {
+        return;
+    }
+    // Register 10 test servers with randomized properties
+    for (int i = 1; i <= 10; i++) {
+        ServerData testServer;
+        testServer.ip = "127.0.0.1";
+        testServer.port = 7777 + i - 1; // Increment port for each server
+        testServer.ageLimit = (i % 3) * 9; // Cycles through 0, 9, 18
+        testServer.pvp = (i % 2) == 0; // Alternates true/false
+        testServer.currentPlayers = 10 + (i * 5); // Incremental players
+        testServer.maxPlayers = 500;
+        testServer.brackets = (i % 3) == 0; // Every 3rd server has brackets
+        testServer.clock = false;
+        
+        // Cycle through different statuses
+        switch(i % 5) {
+            case 0: testServer.status = ServerStatus::Good; break;
+            case 1: testServer.status = ServerStatus::Normal; break;
+            case 2: testServer.status = ServerStatus::Full; break;
+            case 3: testServer.status = ServerStatus::Down; break;
+            case 4: testServer.status = ServerStatus::Auto; break;
+        }
+        
+        testServer.serverId = i;
+        
+        // Cycle through server types
+        switch(i % 4) {
+            case 0: testServer.serverType = ServerType::Normal; break;
+            case 1: testServer.serverType = ServerType::Relax; break;
+            case 2: testServer.serverType = ServerType::Test; break;
+            case 3: testServer.serverType = ServerType::Event; break;
+        }
+
+        if (game_server_manager_->registerGameServer(testServer)) {
+            log_server_event("Test server " + std::to_string(i) + " registered: " + 
+                           testServer.ip + ":" + std::to_string(testServer.port));
+        } else {
+            log_server_event("Failed to register test server " + std::to_string(i));
+        }
+    }
 }
