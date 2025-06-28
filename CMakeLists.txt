@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 
 # Set toolchain before project() if using vcpkg
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -17,36 +17,74 @@ find_package(OpenSSL REQUIRED)
 # Include directories
 include_directories(src)
 
-# Main executable
-add_executable(l2_middlewares
-    src/main.cpp
-    src/rsa_manager.cpp
-    src/blowfish_openssl.cpp
-    src/l2_checksum.cpp
-    src/login_encryption.cpp
-    src/session_key.cpp
-    src/game_client_encryption.cpp
-    src/packet.cpp
-    src/packet_buffer.cpp
-    src/init_packet.cpp
-    src/auth_login_packet.cpp
-    src/request_auth_gg.cpp
-    src/auth_gg_response.cpp
-    src/login_ok_response.cpp
-    src/packet_factory.cpp
-    src/packet_tests.cpp
-    src/client_connection.cpp
-    src/connection_manager.cpp
-    src/login_server.cpp
+# ============================================================================
+# Core Library (Shared between Login and Game servers)
+# ============================================================================
+add_library(L2Core STATIC
+    # Core networking (base classes)
+    src/core/network/base_client_connection.cpp
+    src/core/network/base_connection_manager.cpp
+    src/core/network/packet_buffer.cpp
+    
+    # Core packets
+    src/core/packets/packet.cpp
+    
+    # Core encryption
+    src/core/encryption/rsa_manager.cpp
+    src/core/encryption/blowfish_openssl.cpp
+    src/core/encryption/l2_checksum.cpp
+    src/core/encryption/login_encryption.cpp
+    src/core/encryption/game_client_encryption.cpp
+    
+    # Core utils
+    src/core/utils/session_key.cpp
 )
 
-target_link_libraries(l2_middlewares
+target_link_libraries(L2Core
     Boost::system
     OpenSSL::SSL
     OpenSSL::Crypto
 )
 
-# Windows-specific libraries
+# Windows-specific libraries for core
 if(WIN32)
-    target_link_libraries(l2_middlewares ws2_32 wsock32)
+    target_link_libraries(L2Core ws2_32 wsock32)
 endif()
+
+# ============================================================================
+# Login Server Executable
+# ============================================================================
+add_executable(L2LoginServer
+    src/login/main.cpp
+    src/login/server/login_server.cpp
+    
+    # Login-specific networking (inherits from core base classes)
+    src/login/network/login_client_connection.cpp
+    src/login/network/login_connection_manager.cpp
+    
+    # Login packets
+    src/login/packets/responses/init_packet.cpp
+    src/login/packets/requests/auth_login_packet.cpp
+    src/login/packets/requests/request_auth_gg.cpp
+    src/login/packets/responses/auth_gg_response.cpp
+    src/login/packets/responses/login_ok_response.cpp
+    src/login/packets/packet_factory.cpp
+    
+    # Tests
+    src/login/tests/packet_tests.cpp
+)
+
+target_link_libraries(L2LoginServer L2Core)
+
+# ============================================================================
+# Game Server Executable (Future)
+# ============================================================================
+# add_executable(L2GameServer
+#     src/game/main.cpp  # Future game server entry point
+# )
+# 
+# target_link_libraries(L2GameServer L2Core)
+
+# Set output names
+set_target_properties(L2LoginServer PROPERTIES OUTPUT_NAME "l2_login_server")
+# set_target_properties(L2GameServer PROPERTIES OUTPUT_NAME "l2_game_server")

@@ -1,4 +1,4 @@
-{
+﻿{
     "version": 3,
     "cmakeMinimumRequired": {
         "major": 3,
@@ -19,7 +19,7 @@
         },
         {
             "name": "release",
-            "displayName": "Release Build",
+            "displayName": "Release Build", 
             "description": "Configure for Release with vcpkg",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/release",
@@ -35,8 +35,28 @@
             "configurePreset": "debug"
         },
         {
-            "name": "release",
+            "name": "release", 
             "configurePreset": "release"
+        },
+        {
+            "name": "login-debug",
+            "configurePreset": "debug",
+            "targets": ["L2LoginServer"]
+        },
+        {
+            "name": "login-release",
+            "configurePreset": "release",
+            "targets": ["L2LoginServer"] 
+        },
+        {
+            "name": "core-debug",
+            "configurePreset": "debug",
+            "targets": ["L2Core"] 
+        },
+        {
+            "name": "core-release",
+            "configurePreset": "release",
+            "targets": ["L2Core"] 
         }
     ]
 }
