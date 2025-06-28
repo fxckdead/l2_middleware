@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <random>
+#include <ctime>
 
 // =============================================================================
 // Constructor and Destructor
@@ -437,14 +438,33 @@ void ConnectionManager::handle_packet_from_connection(std::shared_ptr<ReadablePa
             if (auto auth_packet = std::dynamic_pointer_cast<AuthLoginPacket>(packet))
             {
                 log_connection_event("Received login request from " + connection->get_remote_address() +
-                                     " - User: " + auth_packet->getUsername() + " - Password: " + auth_packet->getPassword());
+                                     " - User: " + auth_packet->getUsername());
 
                 // TODO: Validate credentials against database
-                // For now, accept any login
+                // For now, accept any login and generate session keys
+
+                // Generate session key (for demo purposes, using simple values)
+                // TODO: In production, these should be cryptographically random
+                int32_t login_ok1 = static_cast<int32_t>(std::time(nullptr));
+                int32_t login_ok2 = static_cast<int32_t>(std::time(nullptr) ^ 0xDEADBEEF);
+                int32_t play_ok1 = static_cast<int32_t>(std::time(nullptr) ^ 0xCAFEBABE);
+                int32_t play_ok2 = static_cast<int32_t>(std::time(nullptr) ^ 0xFEEDFACE);
+
+                SessionKey sessionKey(play_ok1, play_ok2, login_ok1, login_ok2);
+
+                // Store session information
                 connection->set_account_name(auth_packet->getUsername());
                 connection->set_state(ClientConnection::State::AUTHENTICATED);
 
-                // TODO: Send appropriate response (LoginOk or ServerList)
+                // Send LoginOk response
+                auto login_ok_response = PacketFactory::createLoginOkResponse(sessionKey);
+                connection->send_packet(std::move(login_ok_response));
+
+                log_connection_event("Login successful, LoginOk response sent to " + connection->get_remote_address());
+            }
+            else
+            {
+                log_connection_event("Failed to cast AuthLogin packet from " + connection->get_remote_address());
             }
             break;
         }

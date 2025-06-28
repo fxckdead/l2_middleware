@@ -32,6 +32,7 @@ add_executable(l2_middlewares
     src/auth_login_packet.cpp
     src/request_auth_gg.cpp
     src/auth_gg_response.cpp
+    src/login_ok_response.cpp
     src/packet_factory.cpp
     src/packet_tests.cpp
     src/client_connection.cpp

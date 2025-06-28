@@ -12,7 +12,7 @@ This project is a TCP Server for Login server and Game server for Lineage2 game.
 2. I like to do small steps at a time, this way I can follow you and understand what are you doing.
 3. I'm a senior software eng with more than 10 years of exp, but I'm not a machine like you.
 4. prefer composition over inheritance
+5. Don't write tests unless I ask you to do it !
 
 # AVOID
 1. never say you fixed something until we can confirm it on execution or build time (I hate when you say "bug fixed!" just because you change code and no real test has been made)
-@

@@ -52,6 +52,11 @@ std::unique_ptr<AuthGGResponse> PacketFactory::createAuthGGResponse(int32_t sess
     return std::make_unique<AuthGGResponse>(sessionId);
 }
 
+std::unique_ptr<LoginOkResponse> PacketFactory::createLoginOkResponse(const SessionKey &sessionKey)
+{
+    return std::make_unique<LoginOkResponse>(sessionKey);
+}
+
 // Handle RSA decryption for login packets (matches Rust logic exactly)
 std::vector<uint8_t> PacketFactory::decryptLoginData(
     const std::vector<uint8_t> &encryptedData,

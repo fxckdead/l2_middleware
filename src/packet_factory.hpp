@@ -6,6 +6,7 @@
 #include "init_packet.hpp"
 #include "request_auth_gg.hpp"
 #include "auth_gg_response.hpp"
+#include "login_ok_response.hpp"
 #include "rsa_manager.hpp"
 #include <memory>
 #include <vector>
@@ -37,6 +38,8 @@ public:
         const std::vector<uint8_t> &blowfishKey);
 
     static std::unique_ptr<AuthGGResponse> createAuthGGResponse(int32_t sessionId);
+
+    static std::unique_ptr<LoginOkResponse> createLoginOkResponse(const SessionKey &sessionKey);
 
     // Test function
     static void runTests();
