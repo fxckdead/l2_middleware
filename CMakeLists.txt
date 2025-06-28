@@ -100,6 +100,10 @@ target_link_libraries(L2LoginServer L2Core)
 add_executable(L2GameServer
     src/game/main.cpp
     src/game/server/game_server.cpp
+    
+    # Game-specific networking
+    src/game/network/game_connection_manager.cpp
+    src/game/network/game_client_connection.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

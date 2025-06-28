@@ -1,4 +1,5 @@
 #include "game_server.hpp"
+#include "../network/game_connection_manager.hpp"
 #include <iostream>
 #include <iomanip>
 #include <thread>
@@ -137,14 +138,15 @@ void GameServer::wait_for_shutdown()
 
 size_t GameServer::get_active_connections() const
 {
-    // TODO: Return actual connection count when GameConnectionManager is implemented
-    return 0;
+    return connection_manager_ ? connection_manager_->get_connection_count() : 0;
 }
 
 void GameServer::print_statistics() const
 {
-    // TODO: Print actual statistics when GameConnectionManager is implemented
-    log_server_event("Statistics: 0 active connections (connection manager not implemented)");
+    if (connection_manager_)
+    {
+        connection_manager_->print_stats();
+    }
 }
 
 void GameServer::set_config(const Config &config)
@@ -181,9 +183,13 @@ void GameServer::initialize_server()
 {
     log_server_event("Initializing game server");
 
-    // TODO: Create game-specific connection manager when ready
-    // For now, we'll leave connection_manager_ as nullptr
-    // This will be implemented when we create GameConnectionManager
+    // Create game-specific connection manager
+    BaseConnectionManager::Config conn_config;
+    conn_config.max_connections = config_.max_connections;
+    conn_config.enable_connection_logging = config_.enable_logging;
+    conn_config.connection_timeout = config_.connection_timeout;
+
+    connection_manager_ = std::make_unique<GameConnectionManager>(io_context_, conn_config);
 
     log_server_event("Server initialized");
 }
@@ -215,12 +221,18 @@ void GameServer::handle_accept(boost::system::error_code ec, boost::asio::ip::tc
 
     if (!ec)
     {
-        // TODO: Handle new connections when GameConnectionManager is implemented
-        log_server_event("New connection accepted (not processed yet - connection manager not implemented)");
-        
-        // Close the socket for now since we can't handle it yet
-        boost::system::error_code close_ec;
-        socket.close(close_ec);
+        // Create new connection using the game connection manager
+        auto connection = connection_manager_->create_connection(std::move(socket));
+
+        if (connection)
+        {
+            // Add to connection manager (this will initialize and start the connection)
+            if (connection_manager_->add_connection(connection))
+            {
+                // Start the connection
+                connection->start();
+            }
+        }
     }
     else
     {
@@ -254,11 +266,11 @@ void GameServer::shutdown_server()
         acceptor_.reset();
     }
 
-    // TODO: Disconnect all connections when connection manager is implemented
-    // if (connection_manager_)
-    // {
-    //     connection_manager_->disconnect_all();
-    // }
+    // Disconnect all connections
+    if (connection_manager_)
+    {
+        connection_manager_->disconnect_all();
+    }
 
     // Stop IO context
     io_context_.stop();

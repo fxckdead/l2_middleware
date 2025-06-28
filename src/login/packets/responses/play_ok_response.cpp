@@ -1,6 +1,7 @@
 #include "play_ok_response.hpp"
 #include "../../../core/network/packet_buffer.hpp"
 #include <stdexcept>
+#include <iostream>
 
 PlayOkResponse::PlayOkResponse(const SessionKey &session_key)
     : session_key_(session_key)
@@ -18,6 +19,9 @@ void PlayOkResponse::write(SendablePacketBuffer &buffer)
         // The client will use these values to authenticate with the game server
         buffer.writeInt32(session_key_.play_ok1);
         buffer.writeInt32(session_key_.play_ok2);
+
+        std::cout << "PlayOkResponse packet written with session keys: " << session_key_.play_ok1 << " " << session_key_.play_ok2 << std::endl;
+
     }
     catch (const std::exception &e)
     {

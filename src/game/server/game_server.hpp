@@ -7,6 +7,9 @@
 #include <csignal>
 #include <chrono>
 
+// Forward declarations
+class GameConnectionManager;
+
 class GameServer
 {
 public:
@@ -30,7 +33,7 @@ private:
     // Core components
     boost::asio::io_context io_context_;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
-    // TODO: Add connection_manager_ when GameConnectionManager is implemented
+    std::unique_ptr<GameConnectionManager> connection_manager_;
 
     // Server state
     Config config_;

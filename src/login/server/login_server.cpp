@@ -334,12 +334,11 @@ void LoginServer::registerTestServers()
         testServer.clock = false;
         
         // Cycle through different statuses
-        switch(i % 5) {
+        switch(i % 4) {
             case 0: testServer.status = ServerStatus::Good; break;
             case 1: testServer.status = ServerStatus::Normal; break;
             case 2: testServer.status = ServerStatus::Full; break;
             case 3: testServer.status = ServerStatus::Down; break;
-            case 4: testServer.status = ServerStatus::Auto; break;
         }
         
         testServer.serverId = i;

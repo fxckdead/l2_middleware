@@ -2,7 +2,7 @@
 
 // Constructors
 ServerListResponse::ServerListResponse(const std::vector<ServerData>& servers)
-    : m_servers(servers), m_lastServer(0), m_charsOnServer(std::nullopt)
+    : m_servers(servers), m_lastServer(255), m_charsOnServer(std::nullopt)
 {
 }
 
@@ -75,13 +75,13 @@ void ServerListResponse::setCharsOnServer(const std::unordered_map<uint8_t, GSCh
 // Factory methods
 ServerListResponse ServerListResponse::create(const std::vector<ServerData>& servers)
 {
-    return ServerListResponse(servers);
+    return ServerListResponse(servers, 255);
 }
 
 ServerListResponse ServerListResponse::createWithCharacterInfo(const std::vector<ServerData>& servers,
                                                               const std::unordered_map<uint8_t, GSCharsInfo>& charsOnServer)
 {
-    return ServerListResponse(servers, 0, charsOnServer);
+    return ServerListResponse(servers, 255, charsOnServer);
 }
 
 // Validation
