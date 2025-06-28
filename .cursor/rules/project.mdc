@@ -50,11 +50,13 @@ Based on implementing the ServerList packet handlers, here are the key paths and
 - `src/login/packets/requests/auth_login_packet.hpp/cpp` - RSA decryption example
 - `src/login/packets/requests/request_auth_gg.hpp/cpp` - Simple packet example
 - `src/login/packets/requests/request_server_list.hpp/cpp` - Basic data packet
+- `src/login/packets/requests/request_gs_login.hpp/cpp` - **NEW** - Game server selection with session validation
 
 ### Response Packets (Server → Client)
 - `src/login/packets/responses/init_packet.hpp/cpp` - Complex packet with RSA keys
 - `src/login/packets/responses/login_ok_response.hpp/cpp` - Session key handling
 - `src/login/packets/responses/server_list_response.hpp/cpp` - Dynamic data serialization
+- `src/login/packets/responses/play_ok_response.hpp/cpp` - **NEW** - Game server connection authorization
 
 ## 🔧 Build & Configuration
 - `CMakeLists.txt` - Project structure and dependencies
@@ -77,6 +79,7 @@ src/
 │ └── data/ # Login data structures
 └── game/ # Game server (future)
 ```
+
 ## 🎯 Key Learning Points for Future Work
 
 ### Adding New Packets - Follow This Pattern:
@@ -101,6 +104,55 @@ src/
 - `src/core/encryption/rsa_manager.cpp` - RSA key handling
 - `src/core/encryption/login_encryption.cpp` - Blowfish encryption
 - `src/core/encryption/l2_checksum.cpp` - Packet integrity
+
+## ⚠️ CRITICAL Implementation Details & Common Pitfalls
+
+### Session Key Management (CRITICAL)
+- **ALWAYS** call `set_session_key(sessionKey)` after generating session keys in `handle_auth_login_packet`
+- Session keys MUST be stored in connection object for later validation in RequestGSLogin
+- Session validation happens in `packet->checkSession(session_key_)` - if this fails, client can't connect to game server
+- Debug session issues with logging: log both expected and received session key values
+
+### PacketBuffer Method Names (Build Errors)
+- `SendablePacketBuffer`: use `writeUInt8()` (capital U), `writeInt32()`, etc.
+- `ReadablePacketBuffer`: use `readByte()` for uint8_t, `readInt32()`, etc.
+- **NOT** `writeUint8()` or `readUint8()` - these will cause compilation errors
+
+### State Transition Validation
+- LoginState transitions are strictly validated: CONNECTED → INIT_SENT → BLOWFISH_READY → AUTHENTICATED → SERVER_LIST_SENT → PLAY_OK_SENT
+- Each packet handler should validate current state before processing
+- Invalid state transitions will be rejected with log messages
+
+### Authentication Flow (Complete)
+```
+1. Client connects → LoginClientConnection created
+2. Send InitPacket → RSA keys + blowfish key sent
+3. Client sends AuthLogin → Validate credentials, generate & STORE session keys, send LoginOk
+4. Client sends RequestAuthGG → Validate session ID, send AuthGGResponse  
+5. Client sends RequestServerList → Send server list
+6. Client sends RequestGSLogin → Validate stored session keys, send PlayOk
+7. Client disconnects from login server → Ready to connect to game server
+```
+
+### RequestGSLogin Implementation Example
+This packet demonstrates the complete pattern:
+- Session key validation against stored connection data
+- State management (must be in SERVER_LIST_SENT state)
+- Proper error handling with detailed logging
+- State transition to PLAY_OK_SENT on success
+
+### Common Debug Patterns
+- Always log session key values when generating and validating
+- Log state transitions to track authentication flow
+- Include packet data in error logs for debugging
+- Use detailed connection event logging throughout
+
+### Game Server Integration Points
+After PlayOk is sent, client should:
+1. Connect to selected game server
+2. Send player authentication with play_ok1/play_ok2 session keys
+3. Game server validates these keys with login server
+4. Player enters game world
 
 This structure shows your project follows a **clean separation of concerns** with core networking abstractions and login-specific implementations. The packet factory pattern centralizes complex RSA handling, while the connection classes handle state management and business logic.
 
