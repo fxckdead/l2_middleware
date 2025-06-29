@@ -23,6 +23,9 @@ public:
     // Constructor (matches Rust GameClientEncryption::new)
     explicit GameClientEncryption(const std::vector<uint8_t> &key);
 
+    // Enable encryption immediately (for game server where VersionCheck is sent separately)
+    void enable() { is_enabled = true; }
+
     // Decrypt incoming packets (matches Rust decrypt)
     bool decrypt(std::vector<uint8_t> &data);
 

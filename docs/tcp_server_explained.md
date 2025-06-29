@@ -174,3 +174,142 @@ All subsequent packets received from the client will also be Blowfish-encrypted 
 5.  Process the clean packet payload.
 
 This loop continues for the `RequestServerList` and `RequestServerLogin` flows, with all packets being encrypted and integrity-checked. 
+
+---
+
+# Blueprint for a Lineage 2 **Game Server** (Interlude 746)
+
+The login phase is now complete and the client connects to the **game server** (default port 7777).  The game-server protocol re-uses the same 2-byte length header, but the handshake and encryption rules are different.
+
+## 1. Packet Structure Recap
+
+```
+[Length (2 bytes, LE)] [Packet Data]
+```
+
+* **Length** — includes the 2-byte header
+* **Packet Data** — encrypted _after_ the first two packets
+
+For **patched Interlude clients** the game server uses an XOR stream cipher (the same algorithm retail clients used for pre-C4 chronicles).  Retail-like clients expect Blowfish.  We therefore:
+
+* Send the initial key **in plaintext** inside `VersionCheck`
+* Enable **XOR** immediately after sending that packet
+* Keep the ability to switch to Blowfish later via a server flag
+
+### Padding rules
+
+| Cipher | Check-sum | Padding rule |
+| -------|-----------|--------------|
+| XOR    | 4-byte CRC | Pad to 4-byte boundary |
+| Blowfish | 4-byte CRC | Pad to 8-byte boundary |
+
+## 2. Minimal Handshake Flow
+
+```
+Client → 0x00 SendProtocolVersion   (plain-text)
+Server ← 0x00 VersionCheck          (27 bytes, plain-text)
+Client → 0x08 RequestLogin          (encrypted)
+Server ← 0xDE ShowTownMap (test) or 0x13 CharacterSelectionInfo (encrypted)
+```
+
+### 2.1  SendProtocolVersion  (client ⇒ server)
+
+```
+opcode   = 0x00
+protocol = 746               # Interlude Update 3
+```
+
+### 2.2  VersionCheck  (server ⇒ client)
+
+The server answers with **exactly 27 bytes** (plus the 2-byte length header).
+
+| Offset | Size | Value                        | Notes |
+|--------|------|------------------------------|-------|
+| 0      | 1    | `0x00`                       | Opcode |
+| 1      | 1    | `0x01`                       | Protocol accepted flag |
+| 2      | 16   | `blowfish_or_xor_key[16]`    | Session key sent in plain-text |
+| 18     | 4    | `0x00000000`                 | Opcode obfuscation key (unused) |
+| 22     | 4    | `0x00000300`                 | Feature flags — 0x0300 ⇒ GG-off, legacy mode |
+| 26     | 1    | `0x00`                       | Reserved |
+
+Immediately after this packet is flushed you **enable the XOR cipher**:
+
+```pseudocode
+cipher = GameClientXOR(key)
+cipher.enable()    // first encrypted packet is next
+```
+
+## 3. XOR Encryption / Decryption
+
+```pseudocode
+class GameClientXOR:
+    def __init__(self, key_16_bytes):
+        self.in_key  = key_16_bytes.copy()
+        self.out_key = key_16_bytes.copy()
+        self.enabled = False
+
+    def enable(self):
+        self.enabled = True
+
+    def decrypt(self, data):
+        if not self.enabled:
+            self.enabled = True   # first packet is plain-text
+            return data           # no changes
+        x_or = 0
+        for i, byte in enumerate(data):
+            enc = byte
+            data[i] ^= self.in_key[i & 0x0F] ^ x_or
+            x_or = enc
+        # rotate key
+        block = little_endian_u32(self.in_key[8:12]) + len(data)
+        self.in_key[8:12] = u32_to_bytes(block)
+        return data
+```
+
+*Encryption* is symmetric (see full implementation in `src/core/encryption/game_client_encryption.cpp`).
+
+## 4. Handling RequestLogin (0x08)
+
+`RequestLogin` arrives encrypted.  After decrypting you must read the full buffer so no stray bytes remain; otherwise the next byte will be mis-interpreted as a bogus opcode.
+
+```pseudocode
+struct RequestLogin {
+    opcode       = 0x08
+    account      = read_c_utf16le()    // "hola" in our test
+    play_ok2     = read_u32()
+    play_ok1     = read_u32()
+    login_ok1    = read_u32()
+    login_ok2    = read_u32()
+    client_rev   = read_u32()          // protocol version repeated
+}
+```
+
+Validate the four integers against what the Login-server issued.  On success:
+
+```pseudocode
+send(CharacterSelectionInfo(...))   // opcode 0x13, encrypted
+```
+
+## 5. Building Encrypted Replies
+
+```pseudocode
+def send_game_packet(conn, payload):
+    L2Checksum.add_crc(payload)        # 4-byte XOR CRC
+    pad(payload, 4 if conn.xor else 8)
+    encrypted = conn.cipher.encrypt(payload)
+    final = add_length_header(encrypted)
+    socket.send(final)
+```
+
+---
+
+## Checklist for Your Own Emulator
+
+- [x] Plain-text 27-byte VersionCheck
+- [x] Enable XOR right after sending it
+- [ ] Full `AuthLoginPacket` reader & key validation
+- [ ] XOR CRC verification on incoming packets
+- [ ] Real `CharacterSelectionInfo` data
+- [ ] Additional opcodes (EnterWorld, Move, Chat…)
+
+Once these are in place the client should enter the character selection screen and, after choosing a character, request to enter the world. 

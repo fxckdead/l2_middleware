@@ -91,12 +91,21 @@ void LoginClientConnection::send_server_list()
         // Get the server list
         auto servers = game_server_manager->getServerList();
         
-        // Create and send server list response
-        auto server_list_response = PacketFactory::createServerListResponse(servers);
+        // TODO: Request character counts from game servers (inter-server communication)
+        // For now, create mock character information so client gets complete response
+        std::unordered_map<uint8_t, GSCharsInfo> charsOnServer;
+        for (const auto& server : servers) {
+            GSCharsInfo charInfo;
+            charInfo.totalChars = 0; // No characters initially for this account
+            charsOnServer[static_cast<uint8_t>(server.serverId)] = charInfo;
+        }
+        
+        // Create and send server list response with character information
+        auto server_list_response = PacketFactory::createServerListResponseWithCharInfo(servers, charsOnServer);
         send_packet(std::move(server_list_response));
 
         set_login_state(LoginState::SERVER_LIST_SENT);
-        log_connection_event("Server list sent with " + std::to_string(servers.size()) + " servers");
+        log_connection_event("Server list sent with " + std::to_string(servers.size()) + " servers and character info");
     }
     catch (const std::exception &e)
     {
@@ -131,6 +140,16 @@ void LoginClientConnection::send_play_ok()
 
 void LoginClientConnection::handle_complete_packet(std::vector<uint8_t> packet_data)
 {
+        // ⭐ ADD THIS DEBUG LOGGING ⭐
+        std::string hex_dump = "LoginClientConnection: Raw packet data: ";
+        for (size_t i = 0; i < std::min(packet_data.size(), size_t(16)); ++i) {
+            char hex_byte[4];
+            snprintf(hex_byte, sizeof(hex_byte), "%02X ", packet_data[i]);
+            hex_dump += hex_byte;
+        }
+        if (packet_data.size() > 16) hex_dump += "...";
+        log_connection_event(hex_dump);
+
     try
     {
         // Enable encryption after first client packet if needed

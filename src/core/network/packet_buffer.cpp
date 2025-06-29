@@ -223,6 +223,60 @@ std::vector<uint8_t> SendablePacketBuffer::take()
     return std::move(m_data);
 }
 
+// String writing operations
+void SendablePacketBuffer::writeCUtf16leString(const std::string &value)
+{
+    // Convert UTF-8 string to UTF-16LE and write with null terminator
+    auto utf16_bytes = encodeUtf16le(value);
+    writeBytes(utf16_bytes);
+    // Add null terminator (2 bytes for UTF-16LE)
+    writeUInt16(0);
+}
 
+void SendablePacketBuffer::writeCUtf16leString(const std::optional<std::string> &value)
+{
+    if (value.has_value()) {
+        writeCUtf16leString(value.value());
+    } else {
+        // Write empty string (just null terminator)
+        writeUInt16(0);
+    }
+}
 
+void SendablePacketBuffer::writeSizedCUtf16leString(const std::string &value)
+{
+    // Convert UTF-8 string to UTF-16LE
+    auto utf16_bytes = encodeUtf16le(value);
+    // Write size first (including null terminator)
+    writeUInt32(static_cast<uint32_t>(utf16_bytes.size() + 2));
+    // Write string bytes
+    writeBytes(utf16_bytes);
+    // Add null terminator
+    writeUInt16(0);
+}
 
+void SendablePacketBuffer::writeSizedCUtf16leString(const std::optional<std::string> &value)
+{
+    if (value.has_value()) {
+        writeSizedCUtf16leString(value.value());
+    } else {
+        // Write empty string size (just null terminator)
+        writeUInt32(2);
+        writeUInt16(0);
+    }
+}
+
+// Helper function for UTF-16LE encoding (simple ASCII conversion for now)
+std::vector<uint8_t> SendablePacketBuffer::encodeUtf16le(const std::string &str)
+{
+    std::vector<uint8_t> result;
+    result.reserve(str.length() * 2);
+    
+    for (char c : str) {
+        // Simple ASCII to UTF-16LE conversion
+        result.push_back(static_cast<uint8_t>(c));  // Low byte
+        result.push_back(0);                        // High byte (0 for ASCII)
+    }
+    
+    return result;
+}

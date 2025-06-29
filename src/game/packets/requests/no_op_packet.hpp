@@ -4,13 +4,15 @@
 #include "../../../core/packets/packet.hpp"
 #include "../../../core/network/packet_buffer.hpp"
 #include <cstdint>
+#include <vector>
 
-// NoOpPacket - Fallback packet for unknown packet types
-// Matches pattern from existing login server packets
+// NoOpPacket - Handles ping packets (opcode 0x00)
+// Client sends ping data and expects the same data echoed back
 class NoOpPacket : public ReadablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0xFF;
+    static constexpr uint8_t PACKET_ID = 0x0;
+    std::vector<uint8_t> ping_data_;
 
 public:
     NoOpPacket() = default;
@@ -22,4 +24,7 @@ public:
 
     // Validation (matches existing pattern)
     bool isValid() const;
+    
+    // Get ping data for response
+    const std::vector<uint8_t>& getPingData() const { return ping_data_; }
 };

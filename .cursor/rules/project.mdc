@@ -157,3 +157,50 @@ After PlayOk is sent, client should:
 This structure shows your project follows a **clean separation of concerns** with core networking abstractions and login-specific implementations. The packet factory pattern centralizes complex RSA handling, while the connection classes handle state management and business logic.
 
 For future conversations, focusing on these files will give the fastest understanding of how to extend functionality! 🚀
+
+## 🕹️ Game Server (Current Status & Findings)
+
+### Handshake & Encryption
+1. **VersionCheck (opcode 0x00)** must be sent _unencrypted_ and **exactly 27 bytes** long (plus 2-byte length header = 29 bytes on the wire).
+   - Format:
+     - 1 B opcode (0x00)
+     - 1 B protocol flag (0x01 = accepted)
+     - 16 B Blowfish/XOR key
+     - 4 B opcode-obfuscation key (0x00000000)
+     - 4 B feature flags (0x00000300 ⇒ GG-off, legacy mode)
+     - 1 B reserved (0x00)
+2. **Encryption choice** depends on the client build:
+   - Many patched/legacy Interlude clients use **XOR `GameClientEncryption`** for the game server.
+   - Retail-like clients expect Blowfish.  We now initialise XOR by default but keep the option to switch to Blowfish (see `GameClientConnection::initialize_encryption`).
+3. `GameClientEncryption::enable()` MUST be called immediately after constructing the cipher so the first encrypted packet is handled correctly.
+4. Padding rules after handshake:
+   - XOR ⇒ 4-byte padding (checksum alignment only, no Blowfish blocks).
+   - Blowfish ⇒ 8-byte padding.
+
+### Packet Flow Verified
+```
+SendProtocolVersion (0x00)
+← VersionCheck (0x00, 27 bytes, plain-text)
+RequestLogin      (0x08, XOR)
+← Server responses… (minimap test confirmed)
+```
+
+### Critical Implementation Notes
+- **Do NOT log/dispatch opcodes before decryption**; always refresh `opcode = data[0]` after decrypting.
+- Ensure full buffer consumption in each `*.read()` implementation; leftover bytes will surface as bogus opcodes.
+- When using XOR, packet sizes are **not** restricted to multiples of 8, but the 4-byte checksum (to be implemented) still applies.
+
+### Immediate Next Tasks
+1. **Implement `AuthLoginPacket` reader (0x08)**
+   - Decode UTF-16LE username, session keys (play_ok/login_ok), client revision.
+   - Validate against stored session key from LoginServer.
+2. **CharacterSelectionInfo (0x0D / server opcode 0x13)**
+   - Build real data instead of the minimap test packet.
+3. Add checksum handling for outgoing/incoming XOR packets (`L2Checksum`).
+4. Expand `GamePacketFactory` with additional opcodes (RequestEnterWorld, etc.).
+
+### Debug Tips
+- Use `DEBUG` hex dumps before/after encryption for every packet while features are unstable.
+- Confirm `in_key[8-11]` / `out_key[8-11]` evolution matches retail captures.
+
+---

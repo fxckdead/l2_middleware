@@ -133,7 +133,7 @@ void BaseClientConnection::send_packet(std::unique_ptr<SendablePacket> packet)
 
     try
     {
-        // Serialize the packet with 4-byte padding for checksum compatibility
+        // Serialize the packet with 4-byte padding for checksum compatibility (Login Server)
         auto packet_data = packet->serialize(true, 4);
         send_raw_packet(packet_data);
     }

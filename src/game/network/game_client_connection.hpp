@@ -2,6 +2,8 @@
 
 #include "../../core/network/base_client_connection.hpp"
 #include "../../core/encryption/game_client_encryption.hpp"
+#include "../../core/encryption/login_encryption.hpp"
+#include "../packets/requests/no_op_packet.hpp"
 
 // Forward declarations
 class GameConnectionManager;
@@ -39,9 +41,12 @@ public:
     void set_character_id(uint32_t id) { character_id_ = id; }
     uint32_t get_character_id() const { return character_id_; }
 
-    // Encryption management
+    // Encryption management  
     void initialize_encryption(const std::vector<uint8_t> &key);
-    bool is_encryption_enabled() const { return game_encryption_ != nullptr; }
+    bool is_encryption_enabled() const { return blowfish_encryption_ != nullptr || game_encryption_ != nullptr; }
+    
+    // Override send_packet to use 8-byte padding for Blowfish (Game Server specific)
+    void send_packet(std::unique_ptr<SendablePacket> packet) override;
 
 protected:
     // Implementation of virtual methods from BaseClientConnection
@@ -60,16 +65,24 @@ private:
     std::atomic<GameState> game_state_{GameState::CONNECTED};
 
     // Game-specific encryption state
-    std::unique_ptr<GameClientEncryption> game_encryption_;
+    std::unique_ptr<GameClientEncryption> game_encryption_;  // XOR-based encryption used by client
+    std::unique_ptr<LoginEncryption> blowfish_encryption_;   // (Optional) Blowfish for alternative clients
 
     // Game-specific session information
     std::string player_name_;
     uint32_t character_id_ = 0;
 
-    // TODO: Game-specific packet handlers will be added here
+    // Game-specific packet handlers
+    void handle_game_packet(std::unique_ptr<ReadablePacket> packet, uint8_t actual_opcode);
+    
+    // TODO: Specific packet handlers will be added here
     // void handle_player_auth_packet(...);
     // void handle_move_packet(...);
     // etc.
+
+    void handle_no_op_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_protocol_version_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_login_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;

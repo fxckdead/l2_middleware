@@ -77,7 +77,7 @@ public:
     // State validation will be implemented by derived classes
 
     // Packet I/O (main interface)
-    void send_packet(std::unique_ptr<SendablePacket> packet);
+    virtual void send_packet(std::unique_ptr<SendablePacket> packet);
     void send_raw_packet(const std::vector<uint8_t> &packet_data);
 
     // Generic connection management (derived classes handle encryption)
