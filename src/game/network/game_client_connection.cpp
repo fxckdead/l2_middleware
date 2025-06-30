@@ -120,12 +120,9 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
         // Special validation for 0x0B (CreateCharacter)
         if (actual_opcode == 0x0B && packet_data.size() >= 20)
         {
-            log_connection_event("=== 0x0B CHARACTER CREATE - NAME ANALYSIS ===");
-
             // Try reading UTF-16LE name starting at different offsets
             for (int offset = 1; offset <= 10 && offset < packet_data.size() - 1; offset++)
             {
-                std::string attempt = "Offset " + std::to_string(offset) + " UTF-16: ";
                 std::wstring wide_name;
 
                 // Try to read up to 7 characters (14 bytes) as UTF-16LE
@@ -143,17 +140,8 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
                 }
 
                 // Convert to narrow string for logging
-                if (!wide_name.empty())
-                {
-                    std::string narrow_name(wide_name.begin(), wide_name.end());
-                    attempt += narrow_name;
-                }
-                else
-                {
-                    attempt += "(not readable)";
-                }
-
-                log_connection_event(attempt);
+                std::string narrow_name(wide_name.begin(), wide_name.end());
+                log_connection_event("Character create request: " + narrow_name);
             }
         }
 
@@ -469,10 +457,17 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
         // Update game state to authenticated
         set_game_state(GameState::AUTHENTICATED);
 
-        // Send CharacterSelectionInfo with test character
-        auto char_select_packet = CharacterSelectionInfo::createWithTestCharacter(username);
+        // Send CharacterSelectionInfo from database
+        auto *char_db = getCharacterDatabaseManager();
+        if (!char_db) {
+            log_connection_event("ERROR: Character database manager not available during login");
+            return;
+        }
+        auto char_select_packet = CharacterSelectionInfo::createFromDatabase(char_db, username);
 
-        log_connection_event("Sending CharacterSelectionInfo with test character");
+        log_connection_event("Sending CharacterSelectionInfo with " +
+                             std::to_string(char_db ? char_db->getCharacterCountForAccount(username) : 0) +
+                             " characters for account: " + username);
 
         send_packet(std::move(char_select_packet));
 
@@ -578,6 +573,14 @@ void GameClientConnection::handle_character_create_packet(const std::unique_ptr<
         send_packet(std::move(success_response));
 
         log_connection_event("CharacterCreateSuccess response sent");
+
+        // Send updated character list to show the new character
+        auto char_list_response = CharacterSelectionInfo::createFromDatabase(char_db, player_name_);
+        send_packet(std::move(char_list_response));
+
+        log_connection_event("Updated CharacterSelectionInfo sent with " +
+                             std::to_string(char_db->getCharacterCountForAccount(player_name_)) +
+                             " characters for account: " + player_name_);
     }
     catch (const std::exception &e)
     {

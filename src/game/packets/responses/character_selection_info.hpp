@@ -53,11 +53,11 @@ private:
     std::vector<CharacterInfo> characters_;
 
 public:
-    // Constructor - create with fake character data
+    // Constructor - create with character data
     explicit CharacterSelectionInfo(const std::vector<CharacterInfo>& characters);
     
-    // Create with default test character
-    static std::unique_ptr<CharacterSelectionInfo> createWithTestCharacter(const std::string& account_name);
+    // Create with characters from database
+    static std::unique_ptr<CharacterSelectionInfo> createFromDatabase(class CharacterDatabaseManager* char_db, const std::string& account_name);
 
     // SendablePacket interface implementation
     uint8_t getPacketId() const override { return PACKET_ID; }
