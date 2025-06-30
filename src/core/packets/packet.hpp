@@ -106,4 +106,6 @@ namespace PacketUtils
     // Add padding to packet data for 8-byte alignment (Blowfish requirement)
     void addPadding(std::vector<uint8_t> &data);
 
+    // Utility: pretty hex dump with ASCII sidebar for debugging
+    void hexDump(const std::vector<uint8_t> &data, const std::string &prefix = "");
 }

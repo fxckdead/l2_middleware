@@ -51,4 +51,7 @@ public:
     uint32_t getHairStyle() const { return hair_style_; }
     uint32_t getHairColor() const { return hair_color_; }
     uint32_t getFace() const { return face_; }
+
+    // Pretty-print all parsed values (for debugging)
+    std::string toString() const;
 };

@@ -519,9 +519,7 @@ void GameClientConnection::handle_character_create_packet(const std::unique_ptr<
         }
 
         // Log key character data
-        log_connection_event("Character create request - Name: '" + create_packet->getCharacterName() + 
-                           "', Race: " + std::to_string(create_packet->getRace()) + 
-                           ", Sex: " + std::to_string(create_packet->getSex()));
+        log_connection_event("Character create request:\n'" + create_packet->toString());
         
         // Basic validation
         if (!create_packet->isValid()) {
