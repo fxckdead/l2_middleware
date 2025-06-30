@@ -576,17 +576,37 @@ void GameClientConnection::send_packet(std::unique_ptr<SendablePacket> packet)
     }
 }
 
-void GameClientConnection::initialize_encryption(const std::vector<uint8_t> &key)
+void GameClientConnection::initialize_encryption(const std::vector<uint8_t> &dynamic_key)
 {
     try
     {
-        game_encryption_ = std::make_unique<GameClientEncryption>(key);
+        // The client concatenates the 8-byte dynamic part you send in VersionCheck
+        // with an 8-byte static tail hard-coded in the executable.  If we keep
+        // sending the full 16-byte dynamic_key as-is, bytes 8-15 never match
+        // the client expectation and decryption breaks after the first block.
+
+        static const std::array<uint8_t, 8> STATIC_TAIL = {
+            0xC8, 0x27, 0x93, 0x01, 0xA1, 0x6C, 0x31, 0x97
+        };
+
+        if (dynamic_key.size() < 8)
+        {
+            throw std::runtime_error("Dynamic key must be at least 8 bytes");
+        }
+
+        std::vector<uint8_t> full_key(16);
+        // First 8 bytes come from the dynamic part sent in VersionCheck
+        std::copy(dynamic_key.begin(), dynamic_key.begin() + 8, full_key.begin());
+        // Last 8 bytes are the static client constant
+        std::copy(STATIC_TAIL.begin(), STATIC_TAIL.end(), full_key.begin() + 8);
+
+        game_encryption_ = std::make_unique<GameClientEncryption>(full_key);
         game_encryption_->enable(); // ensure first encrypted packet is handled correctly
 
         // Optional fallback: clear Blowfish (our current client uses XOR)
         blowfish_encryption_.reset();
 
-        log_connection_event("Game client XOR encryption ENABLED");
+        log_connection_event("Game client XOR encryption ENABLED (dynamic+static key)");
     }
     catch (const std::exception &e)
     {

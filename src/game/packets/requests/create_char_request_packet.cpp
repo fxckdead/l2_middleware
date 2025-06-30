@@ -60,9 +60,15 @@ void CreateCharRequestPacket::read(ReadablePacketBuffer &buffer)
     printf("[CreateCharRequestPacket] === END HEX DUMP ===\n");
     
     try {
-        // Reset buffer position for actual parsing by recreating from raw data
-        // Parse the name field from raw data manually
+        if (raw_data.empty()) {
+            throw std::runtime_error("CreateCharRequestPacket: empty payload");
+        }
+
+        // In game packets the opcode has already been removed by PacketFactory,
+        // so the UTF-16 name starts at byte 0.
         size_t data_offset = 0;
+        
+        // Parse the name field from raw data manually
         std::u16string raw_name;
         
         // Read UTF-16LE name until null terminator
