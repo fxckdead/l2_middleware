@@ -76,6 +76,118 @@ uint32_t ReadablePacketBuffer::readUInt32()
         ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24));
 }
 
+int64_t ReadablePacketBuffer::readInt64()
+{
+    checkAndAdvance(8);
+    const uint8_t *ptr = &m_bytes[m_position - 8];
+    return static_cast<int64_t>(
+        static_cast<uint64_t>(ptr[0]) |
+        (static_cast<uint64_t>(ptr[1]) << 8) |
+        (static_cast<uint64_t>(ptr[2]) << 16) |
+        (static_cast<uint64_t>(ptr[3]) << 24) |
+        (static_cast<uint64_t>(ptr[4]) << 32) |
+        (static_cast<uint64_t>(ptr[5]) << 40) |
+        (static_cast<uint64_t>(ptr[6]) << 48) |
+        (static_cast<uint64_t>(ptr[7]) << 56));
+}
+
+uint64_t ReadablePacketBuffer::readUInt64()
+{
+    checkAndAdvance(8);
+    const uint8_t *ptr = &m_bytes[m_position - 8];
+    return static_cast<uint64_t>(ptr[0]) |
+           (static_cast<uint64_t>(ptr[1]) << 8) |
+           (static_cast<uint64_t>(ptr[2]) << 16) |
+           (static_cast<uint64_t>(ptr[3]) << 24) |
+           (static_cast<uint64_t>(ptr[4]) << 32) |
+           (static_cast<uint64_t>(ptr[5]) << 40) |
+           (static_cast<uint64_t>(ptr[6]) << 48) |
+           (static_cast<uint64_t>(ptr[7]) << 56);
+}
+
+float ReadablePacketBuffer::readFloat32()
+{
+    uint32_t asInt = readUInt32();
+    float result;
+    std::memcpy(&result, &asInt, sizeof(float));
+    return result;
+}
+
+double ReadablePacketBuffer::readFloat64()
+{
+    uint64_t asInt = readUInt64();
+    double result;
+    std::memcpy(&result, &asInt, sizeof(double));
+    return result;
+}
+
+std::string ReadablePacketBuffer::readCUtf16leString()
+{
+    std::string result;
+    
+    while (m_position + 1 < m_bytes.size()) {
+        // Read UTF-16LE character (2 bytes, little-endian)
+        uint16_t char16 = readUInt16();
+        
+        // Check for null terminator
+        if (char16 == 0) {
+            break;
+        }
+        
+        // Simple conversion: for now, just convert to ASCII (assuming ASCII characters)
+        if (char16 < 128) {
+            result += static_cast<char>(char16);
+        } else {
+            // For non-ASCII characters, you might want to implement proper UTF-16 to UTF-8 conversion
+            result += '?'; // Placeholder for unsupported characters
+        }
+    }
+    
+    return result;
+}
+
+std::string ReadablePacketBuffer::readSizedString()
+{
+    uint32_t size = readUInt32();
+    if (size == 0) {
+        return std::string();
+    }
+    
+    // Size includes null terminator, so read size-2 characters plus 2-byte null terminator
+    std::string result;
+    for (uint32_t i = 0; i < size / 2 - 1; ++i) { // Each character is 2 bytes, minus null terminator
+        uint16_t char16 = readUInt16();
+        if (char16 < 128) {
+            result += static_cast<char>(char16);
+        } else {
+            result += '?';
+        }
+    }
+    
+    // Read and discard null terminator
+    readUInt16();
+    
+    return result;
+}
+
+std::vector<std::string> ReadablePacketBuffer::readNStrings(size_t count)
+{
+    std::vector<std::string> result;
+    result.reserve(count);
+    
+    for (size_t i = 0; i < count; ++i) {
+        result.push_back(readCUtf16leString());
+    }
+    
+    return result;
+}
+
+const uint8_t *ReadablePacketBuffer::readBytesPtr(size_t length)
+{
+    checkAndAdvance(length);
+    return &m_bytes[m_position - length];
+}
+
 std::vector<uint8_t> ReadablePacketBuffer::readBytes(size_t length)
 {
     checkAndAdvance(length);
@@ -169,6 +281,34 @@ void SendablePacketBuffer::writeUInt32(uint32_t value)
     write(static_cast<uint8_t>((value >> 8) & 0xFF));
     write(static_cast<uint8_t>((value >> 16) & 0xFF));
     write(static_cast<uint8_t>((value >> 24) & 0xFF));
+}
+
+void SendablePacketBuffer::writeUInt64(uint64_t value)
+{
+    write(static_cast<uint8_t>(value & 0xFF));
+    write(static_cast<uint8_t>((value >> 8) & 0xFF));
+    write(static_cast<uint8_t>((value >> 16) & 0xFF));
+    write(static_cast<uint8_t>((value >> 24) & 0xFF));
+    write(static_cast<uint8_t>((value >> 32) & 0xFF));
+    write(static_cast<uint8_t>((value >> 40) & 0xFF));
+    write(static_cast<uint8_t>((value >> 48) & 0xFF));
+    write(static_cast<uint8_t>((value >> 56) & 0xFF));
+}
+
+void SendablePacketBuffer::writeFloat32(float value)
+{
+    static_assert(sizeof(float) == 4, "float must be 4 bytes");
+    uint32_t asInt;
+    std::memcpy(&asInt, &value, sizeof(float));
+    writeUInt32(asInt);
+}
+
+void SendablePacketBuffer::writeFloat64(double value)
+{
+    static_assert(sizeof(double) == 8, "double must be 8 bytes");
+    uint64_t asInt;
+    std::memcpy(&asInt, &value, sizeof(double));
+    writeUInt64(asInt);
 }
 
 void SendablePacketBuffer::writeBytes(const std::vector<uint8_t> &bytes)

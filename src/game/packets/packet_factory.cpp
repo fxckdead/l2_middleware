@@ -1,6 +1,7 @@
 // src/game/packets/packet_factory.cpp
 #include "packet_factory.hpp"
 #include "requests/no_op_packet.hpp"
+#include "requests/create_char_request_packet.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>

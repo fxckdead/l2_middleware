@@ -7,6 +7,7 @@
 #include "../packets/requests/auth_login_packet.hpp"
 #include "../packets/responses/version_check_response.hpp"
 #include "../packets/responses/character_selection_info.hpp"
+#include "../packets/responses/new_character_success.hpp"
 
 // =============================================================================
 // Constructor
@@ -103,7 +104,7 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
             auto packet = GamePacketFactory::createFromClientData(packet_data);
             if (packet)
             {
-                handle_game_packet(std::move(packet), actual_opcode);
+                handle_game_packet(std::move(packet), actual_opcode, packet_data);
             }
             else
             {
@@ -222,7 +223,7 @@ bool GameClientConnection::validate_game_state_transition(GameState from, GameSt
 // Game Packet Handling
 // =============================================================================
 
-void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> packet, uint8_t actual_opcode)
+void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> packet, uint8_t actual_opcode, const std::vector<uint8_t>& raw_packet_data)
 {
     if (!packet)
     {
@@ -265,8 +266,9 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x0A: // RequestAttack (not unknown - this is attack!)
             log_connection_event("RequestAttack packet received");
             break;
-        case 0x0B: // RequestCharacterCreate
-            log_connection_event("RequestCharacterCreate packet received");
+        case 0x0B: // RequestCharacterCreate - Packet to create a new character in database/memory
+            log_connection_event("RequestCharacterCreate packet received - capturing data");
+            handle_character_create_raw_data(raw_packet_data);
             break;
         case 0x0C: // RequestCharacterDelete
             log_connection_event("RequestCharacterDelete packet received");
@@ -274,8 +276,8 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x0D: // RequestGameStart (character selection)
             log_connection_event("RequestGameStart packet received");
             break;
-        case 0x0E: // RequestNewCharacter
-            log_connection_event("RequestNewCharacter packet received");
+        case 0x0E: // RequestNewCharacter - Packet to show the character creation screen
+            handle_request_new_character_packet(packet);
             break;
         default:
             char hex_unknown[8];
@@ -412,10 +414,10 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
         // Update game state to authenticated
         set_game_state(GameState::AUTHENTICATED);
 
-        // Send CharacterSelectionInfo with empty character list
+        // Send CharacterSelectionInfo with test character
         auto char_select_packet = CharacterSelectionInfo::createWithTestCharacter(username);
 
-        log_connection_event("Sending CharacterSelectionInfo (empty list)");
+        log_connection_event("Sending CharacterSelectionInfo with test character");
 
         send_packet(std::move(char_select_packet));
 
@@ -425,6 +427,54 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
     {
         log_connection_event("Error handling RequestLogin packet: " + std::string(e.what()));
         // TODO: Send login failure response
+    }
+}
+
+void GameClientConnection::handle_character_create_raw_data(const std::vector<uint8_t>& packet_data)
+{
+    log_connection_event("=== CHARACTER CREATE - RAW DATA CAPTURE ===");
+    log_connection_event("Packet size: " + std::to_string(packet_data.size()) + " bytes");
+    
+    // Log full hex dump for analysis
+    std::string hex_dump = "HEX: ";
+    for (size_t i = 0; i < packet_data.size() && i < 128; ++i) {
+        char hex[4];
+        snprintf(hex, sizeof(hex), "%02X ", packet_data[i]);
+        hex_dump += hex;
+        
+        // Add line breaks every 16 bytes for readability
+        if ((i + 1) % 16 == 0) {
+            log_connection_event(hex_dump);
+            hex_dump = "     ";
+        }
+    }
+    if (!hex_dump.empty() && hex_dump != "     ") {
+        log_connection_event(hex_dump);
+    }
+    
+    // Try to parse typical character creation fields for analysis
+    log_connection_event("ANALYSIS ATTEMPT:");
+    if (packet_data.size() >= 8) {
+        log_connection_event("First 8 bytes: " + 
+            std::to_string(packet_data[0]) + " " + std::to_string(packet_data[1]) + " " + 
+            std::to_string(packet_data[2]) + " " + std::to_string(packet_data[3]) + " " +
+            std::to_string(packet_data[4]) + " " + std::to_string(packet_data[5]) + " " +
+            std::to_string(packet_data[6]) + " " + std::to_string(packet_data[7]));
+    }
+    
+    log_connection_event("=== USE THESE VALUES IN CharacterSelectionInfo TO AVOID CRASH! ===");
+}
+
+void GameClientConnection::handle_request_new_character_packet(const std::unique_ptr<ReadablePacket>& packet)
+{
+    log_connection_event("RequestNewCharacter packet received - showing character creation screen");
+    try {
+        auto create_ok_response = std::make_unique<NewCharacterSuccess>();
+        send_packet(std::move(create_ok_response));
+        log_connection_event("NewCharacterSuccess response sent - client UI should update");
+    }
+    catch (const std::exception& e) {
+        log_connection_event("Error sending NewCharacterSuccess response: " + std::string(e.what()));
     }
 }
 
