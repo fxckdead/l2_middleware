@@ -200,17 +200,24 @@ RequestLogin      (0x08, XOR)
 4. Expand `GamePacketFactory` with additional opcodes (RequestEnterWorld, etc.).
 
 ### Debug Tips
-- Use `DEBUG` hex dumps before/after encryption for every packet while features are unstable.
-- Confirm `in_key[8-11]` / `out_key[8-11]` evolution matches retail captures.
+• Call `PacketUtils::hexDump(data, "[Prefix] ")` to print any raw packet in a clean hex/ASCII format (utility lives in `src/core/packets/packet.cpp`).  
+• `CreateCharRequestPacket` exposes `toString()` to log the parsed character fields quickly.  
+• Use these helpers instead of re-implementing ad-hoc printf loops.  
+• Continue to log encryption deltas when working on cipher code; confirm `in_key[8-11]` / `out_key[8-11]` evolution matches retail captures.
 
 ### XOR GameCrypt Gotchas (June 2025)
-- The 16-byte XOR key sent in `VersionCheck` is **NOT** fully dynamic. Clients concatenate the first 8 bytes you send with an immutable static tail `C8 27 93 01 A1 6C 31 97`. Build the key exactly `dynamic[0-7] || STATIC_TAIL` before creating `GameClientEncryption`.
-- Rotate `key[8-11]` by **payload size only** – the 2-byte length header is already stripped by the networking layer.
+- The 16-byte XOR key sent in `VersionCheck` is **NOT** fully dynamic. Clients concatenate the first 8 bytes you 
+send with an immutable static tail `C8 27 93 01 A1 6C 31 97`. Build the key exactly `dynamic[0-7] || 
+STATIC_TAIL` before creating `GameClientEncryption`.
+- Rotate `key[8-11]` by **payload size only** – the 2-byte length header is already stripped by the networking 
+layer.
 - If you see packets that decrypt cleanly for 7 bytes and then corrupt, suspect a tail/key mismatch.
 - `GamePacketFactory` already removes the opcode byte; readers must start at offset 0.
 
 Additional XOR implementation reminders (July 2025)
-• Strip the 2-byte length header _before_ calling `GameClientEncryption::decrypt()`; encryption starts immediately after the header, so the key index is computed as `(i - offset) % 16` where `offset = 0` for the first encrypted byte.
+• Strip the 2-byte length header _before_ calling `GameClientEncryption::decrypt()`; encryption starts 
+immediately after the header, so the key index is computed as `(i - offset) % 16` where `offset = 0` for the 
+first encrypted byte.
 • Maintain the classic 'chaining XOR':
   ```
   uint8_t xOr = 0;
@@ -221,7 +228,8 @@ Additional XOR implementation reminders (July 2025)
   }
   ```
   (Swap the assignment order for encryption.)
-• Append the STATIC_TAIL _once_ when constructing the 16-byte key – do **not** re-apply it every packet. A common bug is to forget the tail, which causes corruption starting at byte 8 (notably visible in the 0x0B _Create Character_ packet).
-• Rotate `key[8-11]` with `delta = payload_size` (header and padding already removed). Padding for XOR packets is 4 bytes to the next multiple of 4; this padding is _not_ included in the rotation delta.
-
----
+• Append the STATIC_TAIL _once_ when constructing the 16-byte key – do **not** re-apply it every packet. A 
+common bug is to forget the tail, which causes corruption starting at byte 8 (notably visible in the 0x0B 
+_Create Character_ packet).
+• Rotate `key[8-11]` with `delta = payload_size` (header and padding already removed). Padding for XOR packets 
+is 4 bytes to the next multiple of 4; this padding is _not_ included in the rotation delta.

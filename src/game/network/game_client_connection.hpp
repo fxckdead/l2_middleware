@@ -41,6 +41,9 @@ public:
     void set_character_id(uint32_t id) { character_id_ = id; }
     uint32_t get_character_id() const { return character_id_; }
 
+    // Character database access
+    class CharacterDatabaseManager* getCharacterDatabaseManager() const;
+
     // Encryption management  
     void initialize_encryption(const std::vector<uint8_t> &key);
     bool is_encryption_enabled() const { return blowfish_encryption_ != nullptr || game_encryption_ != nullptr; }
