@@ -85,6 +85,7 @@ private:
     void handle_request_login_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_new_character_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_character_create_raw_data(const std::vector<uint8_t>& packet_data);
+    void handle_character_create_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;

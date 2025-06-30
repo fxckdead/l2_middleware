@@ -26,9 +26,9 @@ public:
     // Enable encryption immediately (for game server where VersionCheck is sent separately)
     void enable() { is_enabled = true; }
 
-    // Decrypt incoming packets (matches Rust decrypt)
-    bool decrypt(std::vector<uint8_t> &data);
+    // Decrypt incoming packets (L2J/Interlude reference implementation)
+    bool decrypt(std::vector<uint8_t> &data, bool has_header = false);
 
-    // Encrypt outgoing packets (matches Rust encrypt)
-    bool encrypt(std::vector<uint8_t> &data);
+    // Encrypt outgoing packets (L2J/Interlude reference implementation)  
+    bool encrypt(std::vector<uint8_t> &data, bool has_header = false);
 };
