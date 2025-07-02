@@ -1,5 +1,8 @@
 #include "packet.hpp"
 #include "../network/packet_buffer.hpp"
+#include <iomanip>
+#include <sstream>
+#include <iostream>
 
 // SendablePacket default implementation
 std::vector<uint8_t> SendablePacket::serialize(bool withPadding)
@@ -46,4 +49,39 @@ namespace PacketUtils
         data.resize(paddedSize, 0x00);
     }
 
+    // ---------------------------------------------------------------------
+    // Hex dump helper (offset + 16-byte rows + ASCII view)
+    // ---------------------------------------------------------------------
+
+    void hexDump(const std::vector<uint8_t> &data, const std::string &prefix)
+    {
+        if (data.empty()) {
+            std::cout << prefix << "<empty>" << std::endl;
+            return;
+        }
+
+        for (size_t i = 0; i < data.size(); i += 16) {
+            std::ostringstream line;
+            line << prefix << std::setw(4) << std::setfill('0') << std::hex << i << ": ";
+
+            // hex bytes
+            for (size_t j = 0; j < 16; ++j) {
+                if (i + j < data.size()) {
+                    line << std::setw(2) << static_cast<int>(data[i + j]) << ' ';
+                } else {
+                    line << "   ";
+                }
+            }
+
+            line << " | ";
+
+            // ASCII
+            for (size_t j = 0; j < 16 && (i + j) < data.size(); ++j) {
+                uint8_t b = data[i + j];
+                line << ((b >= 32 && b <= 126) ? static_cast<char>(b) : '.');
+            }
+
+            std::cout << line.str() << std::endl;
+        }
+    }
 }

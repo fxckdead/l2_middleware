@@ -41,6 +41,9 @@ public:
     void set_character_id(uint32_t id) { character_id_ = id; }
     uint32_t get_character_id() const { return character_id_; }
 
+    // Character database access
+    class CharacterDatabaseManager* getCharacterDatabaseManager() const;
+
     // Encryption management  
     void initialize_encryption(const std::vector<uint8_t> &key);
     bool is_encryption_enabled() const { return blowfish_encryption_ != nullptr || game_encryption_ != nullptr; }
@@ -73,7 +76,7 @@ private:
     uint32_t character_id_ = 0;
 
     // Game-specific packet handlers
-    void handle_game_packet(std::unique_ptr<ReadablePacket> packet, uint8_t actual_opcode);
+    void handle_game_packet(std::unique_ptr<ReadablePacket> packet, uint8_t actual_opcode, const std::vector<uint8_t>& raw_packet_data);
     
     // TODO: Specific packet handlers will be added here
     // void handle_player_auth_packet(...);
@@ -83,6 +86,9 @@ private:
     void handle_no_op_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_protocol_version_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_login_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_new_character_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_character_create_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_game_start_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;

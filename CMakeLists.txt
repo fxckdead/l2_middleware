@@ -100,6 +100,7 @@ target_link_libraries(L2LoginServer L2Core)
 add_executable(L2GameServer
     src/game/main.cpp
     src/game/server/game_server.cpp
+    src/game/server/character_database_manager.cpp
     
     # Game-specific networking
     src/game/network/game_connection_manager.cpp
@@ -113,6 +114,7 @@ add_executable(L2GameServer
     src/game/packets/requests/auth_login_packet.cpp
     src/game/packets/requests/new_char_request_packet.cpp
     src/game/packets/requests/create_char_request_packet.cpp
+    src/game/packets/requests/request_game_start.cpp
     src/game/packets/requests/logout_packet.cpp
     src/game/packets/requests/delete_char_packet.cpp
     src/game/packets/requests/restore_char_packet.cpp
@@ -124,6 +126,8 @@ add_executable(L2GameServer
     src/game/packets/responses/ping_response.cpp
     src/game/packets/responses/version_check_response.cpp
     src/game/packets/responses/character_selection_info.cpp
+    src/game/packets/responses/new_character_success.cpp
+    src/game/packets/responses/character_create_success.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

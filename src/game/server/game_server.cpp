@@ -1,5 +1,6 @@
 #include "game_server.hpp"
 #include "../network/game_connection_manager.hpp"
+#include "character_database_manager.hpp"
 #include <iostream>
 #include <iomanip>
 #include <thread>
@@ -182,6 +183,13 @@ void GameServer::handle_signal(int signal_number)
 void GameServer::initialize_server()
 {
     log_server_event("Initializing game server");
+
+    // Initialize character database manager first (critical service)
+    character_database_manager_ = std::make_unique<CharacterDatabaseManager>();
+    if (!character_database_manager_) {
+        throw std::runtime_error("Failed to initialize character database manager");
+    }
+    log_server_event("Character database manager initialized");
 
     // Create game-specific connection manager
     BaseConnectionManager::Config conn_config;

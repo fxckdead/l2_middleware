@@ -9,6 +9,7 @@
 
 // Forward declarations
 class GameConnectionManager;
+class CharacterDatabaseManager;
 
 class GameServer
 {
@@ -34,6 +35,7 @@ private:
     boost::asio::io_context io_context_;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
     std::unique_ptr<GameConnectionManager> connection_manager_;
+    std::unique_ptr<CharacterDatabaseManager> character_database_manager_;
 
     // Server state
     Config config_;
@@ -69,6 +71,9 @@ public:
     // Configuration
     const Config &get_config() const { return config_; }
     void set_config(const Config &config);
+
+    // Character database management
+    CharacterDatabaseManager* get_character_database_manager() const { return character_database_manager_.get(); }
 
     // Signal handling (needs to be public for global signal handler)
     void handle_signal(int signal_number);

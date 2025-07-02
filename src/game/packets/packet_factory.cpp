@@ -1,6 +1,8 @@
 // src/game/packets/packet_factory.cpp
 #include "packet_factory.hpp"
 #include "requests/no_op_packet.hpp"
+#include "requests/create_char_request_packet.hpp"
+#include "requests/request_game_start.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -16,10 +18,6 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
 
     uint8_t opcode = extractOpcode(rawData);
 
-    // ⭐ ADD THIS DEBUG LOGGING ⭐
-    std::cout << "GamePacketFactory: Creating packet with opcode 0x"
-              << std::hex << static_cast<int>(opcode) << std::dec << std::endl;
-
     // Remove opcode from data (matches login: data.split_to(1))
     std::vector<uint8_t> packetData(rawData.begin() + 1, rawData.end());
 
@@ -33,42 +31,34 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
     {
     case GameClientPacketType::SendProtocolVersion:
         // 0x00 - Client announcing protocol version (Interlude Update 3)
-        std::cout << "Handling SendProtocolVersion packet (0x00)" << std::endl;
         return createProtocolVersionPacket(packetData);
 
     case GameClientPacketType::MoveBackwardToLocation:
         // 0x01 - Movement packet
-        std::cout << "Handling MoveBackwardToLocation packet (0x01) as NoOp" << std::endl;
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::Say:
         // 0x02 - Chat packet
-        std::cout << "Handling Say packet (0x02) as NoOp" << std::endl;
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestEnterWorld:
         // 0x03 - Enter world request
-        std::cout << "Handling RequestEnterWorld packet (0x03)" << std::endl;
         return createEnterWorldPacket(packetData);
 
     case GameClientPacketType::Action:
         // 0x04 - Action packet (attack, pickup, etc)
-        std::cout << "Handling Action packet (0x04) as NoOp" << std::endl;
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestLogin:
         // 0x08 - Login authentication
-        std::cout << "Handling RequestLogin packet (0x08)" << std::endl;
         return createAuthLoginPacket(packetData);
 
     case GameClientPacketType::SendLogOut:
         // 0x09 - Logout request
-        std::cout << "Handling SendLogOut packet (0x09) as NoOp" << std::endl;
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestAttack:
         // 0x0A - Attack request
-        std::cout << "Handling RequestAttack packet (0x0A) as NoOp" << std::endl;
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestCharacterCreate:
@@ -81,14 +71,13 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
 
     case GameClientPacketType::RequestGameStart:
         // 0x0D - Game start (character selection)
-        return createSelectCharPacket(packetData);
+        return createRequestGameStartPacket(packetData);
 
     case GameClientPacketType::RequestNewCharacter:
         // 0x0E - New character info request
         return createNewCharRequestPacket(packetData);
 
     default:
-        std::cout << "Unknown Game Client packet ID: 0x" << std::hex << static_cast<int>(opcode) << std::dec << std::endl;
         return createNoOpPacket(packetData);
     }
 }
@@ -223,6 +212,21 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createRestoreCharPacket(const
     catch (const std::exception &e)
     {
         throw PacketException("Failed to create RestoreChar packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestGameStartPacket(const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<RequestGameStart>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestGameStart packet: " + std::string(e.what()));
     }
 }
 
