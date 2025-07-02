@@ -57,6 +57,16 @@
             "name": "core-release",
             "configurePreset": "release",
             "targets": ["L2Core"] 
+        },
+        {
+            "name": "game-debug",
+            "configurePreset": "debug",
+            "targets": ["L2GameServer"]
+        },
+        {
+            "name": "game-release",
+            "configurePreset": "release",
+            "targets": ["L2GameServer"]
         }
     ]
 }
