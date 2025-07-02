@@ -16,6 +16,7 @@ private:
     uint32_t sex_;
     uint32_t class_id_;
     uint32_t int_;
+    uint32_t str_;
     uint32_t dex_;
     uint32_t con_;
     uint32_t men_;
@@ -24,9 +25,6 @@ private:
     uint32_t hair_style_;
     uint32_t hair_color_;
     uint32_t face_;
-    
-    // Helper method for UTF-16LE string parsing
-    std::string readUTF16LEString(ReadablePacketBuffer &buffer, size_t max_bytes = 64);
 
 public:
     CreateCharRequestPacket() = default;

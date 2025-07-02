@@ -1,10 +1,9 @@
 ﻿#include "create_char_request_packet.hpp"
 #include <stdexcept>
+#include <sstream>
+#include <cctype>
 #include <locale>
 #include <codecvt>
-#include <iostream>
-#include <cstdio>
-#include <sstream>
 
 uint8_t CreateCharRequestPacket::getPacketId() const
 {
@@ -18,89 +17,52 @@ std::optional<uint16_t> CreateCharRequestPacket::getExPacketId() const
 
 void CreateCharRequestPacket::read(ReadablePacketBuffer &buffer)
 {
-    // Copy packet data
-    size_t total_size = buffer.getRemainingLength();
-    std::vector<uint8_t> raw_data;
-    raw_data.reserve(total_size);
-    for (size_t i = 0; i < total_size; ++i)
-    {
-        raw_data.push_back(buffer.readByte());
-    }
-
     try
     {
-        if (raw_data.size() < 56)
-        {
-            throw std::runtime_error("CreateCharRequestPacket: payload too small");
-        }
-
         // --- Name (variable length UTF-16LE, null-terminated) ---
         std::u16string raw_name;
-        size_t data_offset = 0;
 
-        while (data_offset + 1 < raw_data.size())
+        while (buffer.getRemainingLength() >= 2)
         {
-            uint16_t ch = static_cast<uint16_t>(raw_data[data_offset]) |
-                          (static_cast<uint16_t>(raw_data[data_offset + 1]) << 8);
-            data_offset += 2;
-
+            uint16_t ch = buffer.readUInt16();
             if (ch == 0)
             {
-                break; // reached terminator
+                break; // reached null terminator
             }
-
             raw_name += static_cast<char16_t>(ch);
         }
 
-        if (data_offset + 28 > raw_data.size())
-        {
-            throw std::runtime_error("CreateCharRequestPacket: payload truncated after name");
-        }
-
+        // Convert UTF-16 to UTF-8
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
         character_name_ = converter.to_bytes(raw_name);
 
-        // --- Fixed numeric fields follow the name ---
-        auto read_u32 = [&raw_data](size_t offset) -> uint32_t
-        {
-            return static_cast<uint32_t>(raw_data[offset]) |
-                   (static_cast<uint32_t>(raw_data[offset + 1]) << 8) |
-                   (static_cast<uint32_t>(raw_data[offset + 2]) << 16) |
-                   (static_cast<uint32_t>(raw_data[offset + 3]) << 24);
-        };
+        // Read remaining fields using buffer methods
+        race_ = buffer.readUInt32();
+        sex_ = buffer.readUInt32();
+        class_id_ = buffer.readUInt32();
 
-        race_ = read_u32(data_offset);
-        data_offset += 4;
-        sex_ = read_u32(data_offset);
-        data_offset += 4;
-        class_id_ = read_u32(data_offset);
-        data_offset += 4;
+        // Read the 6 stat fields individually (as per Java implementation)
+        int_ = buffer.readUInt32(); // intelligence
+        str_ = buffer.readUInt32(); // strength
+        con_ = buffer.readUInt32(); // constitution
+        men_ = buffer.readUInt32(); // mental
+        dex_ = buffer.readUInt32(); // dexterity
+        wit_ = buffer.readUInt32(); // wisdom
 
-        // Skip 24 bytes of unknown / reserved data
-        data_offset += 24;
+        // Appearance fields
+        hair_style_ = buffer.readUInt32();
+        hair_color_ = buffer.readUInt32();
+        face_ = buffer.readUInt32();
 
-        if (data_offset + 12 > raw_data.size())
-        {
-            hair_style_ = hair_color_ = face_ = 0;
-        }
-        else
-        {
-            hair_style_ = read_u32(data_offset);
-            data_offset += 4;
-            hair_color_ = read_u32(data_offset);
-            data_offset += 4;
-            face_ = read_u32(data_offset);
-        }
-
-        // Stats (not transmitted by client during creation → default zeros)
-        int_ = dex_ = con_ = men_ = wit_ = chr_ = 0;
+        // chr_ is not part of the packet, default to 0
+        chr_ = 0;
     }
     catch (const std::exception &e)
     {
         // Reset values on error
         character_name_ = "";
         race_ = sex_ = class_id_ = 0;
-        int_ = dex_ = con_ = men_ = wit_ = chr_ = 0;
+        int_ = str_ = dex_ = con_ = men_ = wit_ = chr_ = 0;
         hair_style_ = hair_color_ = face_ = 0;
 
         throw std::runtime_error("Failed to parse CreateCharRequestPacket: " + std::string(e.what()));
@@ -109,10 +71,19 @@ void CreateCharRequestPacket::read(ReadablePacketBuffer &buffer)
 
 bool CreateCharRequestPacket::isValid() const
 {
-    // Basic validation
-    if (character_name_.empty() || character_name_.length() > 16)
+    // Name validation (as per Java implementation)
+    if (character_name_.length() < 1 || character_name_.length() > 16)
     {
         return false;
+    }
+
+    // Basic alphanumeric check (simplified version of StringUtil.isAlphaNumeric)
+    for (char c : character_name_)
+    {
+        if (!std::isalnum(static_cast<unsigned char>(c)))
+        {
+            return false;
+        }
     }
 
     // Validate race (0=Human, 1=Elf, 2=DarkElf, 3=Orc, 4=Dwarf)
@@ -123,6 +94,33 @@ bool CreateCharRequestPacket::isValid() const
 
     // Validate sex (0=Male, 1=Female)
     if (sex_ > 1)
+    {
+        return false;
+    }
+
+    // Validate face (as per Java implementation: 0-2)
+    if (face_ > 2)
+    {
+        return false;
+    }
+
+    // Validate hair style (as per Java implementation)
+    bool is_female = (sex_ == 1);
+    if (hair_style_ < 0)
+    {
+        return false;
+    }
+    if (!is_female && hair_style_ > 4) // Male: 0-4
+    {
+        return false;
+    }
+    if (is_female && hair_style_ > 6) // Female: 0-6
+    {
+        return false;
+    }
+
+    // Validate hair color (as per Java implementation: 0-3)
+    if (hair_color_ > 3)
     {
         return false;
     }
@@ -145,6 +143,12 @@ std::string CreateCharRequestPacket::toString() const
         << ", hairStyle=" << hair_style_
         << ", hairColor=" << hair_color_
         << ", face=" << face_
+        << ", str=" << str_
+        << ", int=" << int_
+        << ", con=" << con_
+        << ", men=" << men_
+        << ", dex=" << dex_
+        << ", wit=" << wit_
         << "]";
     return oss.str();
 }

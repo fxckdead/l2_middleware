@@ -10,6 +10,7 @@
 #include "../packets/responses/character_selection_info.hpp"
 #include "../packets/responses/new_character_success.hpp"
 #include "../packets/responses/character_create_success.hpp"
+#include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
 
@@ -65,31 +66,6 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
             return;
         }
 
-        uint8_t actual_opcode = 0; // will set after decrypt
-
-        // Debug logging - DETAILED VALIDATION
-        log_connection_event("=== PACKET VALIDATION - BEFORE DECRYPT ===");
-        log_connection_event("Packet size: " + std::to_string(packet_data.size()) + " bytes");
-
-        std::string hex_dump = "Raw (first 32 bytes): ";
-        for (size_t i = 0; i < std::min(packet_data.size(), size_t(32)); ++i)
-        {
-            char hex_byte[4];
-            snprintf(hex_byte, sizeof(hex_byte), "%02X ", packet_data[i]);
-            hex_dump += hex_byte;
-        }
-        log_connection_event(hex_dump);
-
-        // CRITICAL DEBUG: Check packet data source
-        if (packet_data.size() >= 2)
-        {
-            uint16_t first_two = static_cast<uint16_t>(packet_data[0]) |
-                                 (static_cast<uint16_t>(packet_data[1]) << 8);
-            log_connection_event("CRITICAL: First 2 bytes interpreted as length: " + std::to_string(first_two));
-            log_connection_event("CRITICAL: This should be ENCRYPTED PAYLOAD, not length!");
-            log_connection_event("CRITICAL: If seeing huge numbers (>1000), header stripping failed!");
-        }
-
         // Decrypt the packet
         if (!decrypt_incoming_packet(packet_data))
         {
@@ -98,52 +74,8 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
             return;
         }
 
-        // After successful decryption, refresh opcode
-        actual_opcode = packet_data[0];
-
-        // Debug logging after decryption - DETAILED VALIDATION
-        log_connection_event("=== PACKET VALIDATION - AFTER DECRYPT ===");
-        log_connection_event("Decrypted size: " + std::to_string(packet_data.size()) + " bytes");
-        log_connection_event("Opcode (first byte): 0x" +
-                             std::string(1, "0123456789ABCDEF"[actual_opcode >> 4]) +
-                             std::string(1, "0123456789ABCDEF"[actual_opcode & 0xF]));
-
-        hex_dump = "Decrypted (first 32 bytes): ";
-        for (size_t i = 0; i < std::min(packet_data.size(), size_t(32)); ++i)
-        {
-            char hex_byte[4];
-            snprintf(hex_byte, sizeof(hex_byte), "%02X ", packet_data[i]);
-            hex_dump += hex_byte;
-        }
-        log_connection_event(hex_dump);
-
-        // Special validation for 0x0B (CreateCharacter)
-        if (actual_opcode == 0x0B && packet_data.size() >= 20)
-        {
-            // Try reading UTF-16LE name starting at different offsets
-            for (int offset = 1; offset <= 10 && offset < packet_data.size() - 1; offset++)
-            {
-                std::wstring wide_name;
-
-                // Try to read up to 7 characters (14 bytes) as UTF-16LE
-                for (int i = 0; i < 7 && (offset + i * 2 + 1) < packet_data.size(); i++)
-                {
-                    uint16_t wide_char = static_cast<uint16_t>(packet_data[offset + i * 2]) |
-                                         (static_cast<uint16_t>(packet_data[offset + i * 2 + 1]) << 8);
-
-                    if (wide_char == 0)
-                        break; // null terminator
-                    if (wide_char < 32 || wide_char > 126)
-                        break; // non-printable
-
-                    wide_name += static_cast<wchar_t>(wide_char);
-                }
-
-                // Convert to narrow string for logging
-                std::string narrow_name(wide_name.begin(), wide_name.end());
-                log_connection_event("Character create request: " + narrow_name);
-            }
-        }
+        // Extract opcode after decryption
+        uint8_t opcode = packet_data[0];
 
         // Use GamePacketFactory to create and handle packets
         try
@@ -151,7 +83,7 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
             auto packet = GamePacketFactory::createFromClientData(packet_data);
             if (packet)
             {
-                handle_game_packet(std::move(packet), actual_opcode, packet_data);
+                handle_game_packet(std::move(packet), opcode, packet_data);
             }
             else
             {
@@ -215,25 +147,15 @@ void GameClientConnection::encrypt_outgoing_packet(std::vector<uint8_t> &packet_
 {
     try
     {
-        // DEBUG: Log encryption state
-        static int packet_count = 0;
-        packet_count++;
-
         if (game_encryption_)
         {
-            log_connection_event("ENCRYPT PACKET #" + std::to_string(packet_count) + " - XOR - Size: " + std::to_string(packet_data.size()) + " bytes");
             game_encryption_->encrypt(packet_data, false); // Header already stripped by prepare_packet_for_transmission
         }
         else if (blowfish_encryption_)
         {
-            log_connection_event("ENCRYPT PACKET #" + std::to_string(packet_count) + " - BLOWFISH - Size: " + std::to_string(packet_data.size()) + " bytes");
             blowfish_encryption_->encrypt(packet_data);
         }
         // If no encryption is set up yet, packets are sent in plaintext
-        else
-        {
-            log_connection_event("Encrypting packet in plaintext mode (encryption not initialized)");
-        }
     }
     catch (const std::exception &e)
     {
@@ -277,10 +199,10 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
 
     try
     {
-        // Log the actual opcode for debugging
+        // Log packet processing
         char hex_opcode[8];
         snprintf(hex_opcode, sizeof(hex_opcode), "0x%02X", actual_opcode);
-        log_connection_event("Processing game packet opcode: " + std::string(hex_opcode) +
+        log_connection_event("Processing packet " + std::string(hex_opcode) +
                              " in state: " + std::string(game_state_to_string(game_state_.load())));
 
         // Handle Interlude Update 3 packets based on correct opcodes
@@ -311,14 +233,13 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             log_connection_event("RequestAttack packet received");
             break;
         case 0x0B: // RequestCharacterCreate - Packet to create a new character in database/memory
-            log_connection_event("RequestCharacterCreate packet received - using proper parser");
             handle_character_create_packet(packet);
             break;
         case 0x0C: // RequestCharacterDelete
             log_connection_event("RequestCharacterDelete packet received");
             break;
         case 0x0D: // RequestGameStart (character selection)
-            log_connection_event("RequestGameStart packet received");
+            handle_request_game_start_packet(packet);
             break;
         case 0x0E: // RequestNewCharacter - Packet to show the character creation screen
             handle_request_new_character_packet(packet);
@@ -330,7 +251,7 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             break;
         }
 
-        log_connection_event("Game packet processed successfully");
+
     }
     catch (const std::exception &e)
     {
@@ -480,44 +401,7 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
     }
 }
 
-void GameClientConnection::handle_character_create_raw_data(const std::vector<uint8_t> &packet_data)
-{
-    log_connection_event("=== CHARACTER CREATE - RAW DATA CAPTURE ===");
-    log_connection_event("Packet size: " + std::to_string(packet_data.size()) + " bytes");
 
-    // Log full hex dump for analysis
-    std::string hex_dump = "HEX: ";
-    for (size_t i = 0; i < packet_data.size() && i < 128; ++i)
-    {
-        char hex[4];
-        snprintf(hex, sizeof(hex), "%02X ", packet_data[i]);
-        hex_dump += hex;
-
-        // Add line breaks every 16 bytes for readability
-        if ((i + 1) % 16 == 0)
-        {
-            log_connection_event(hex_dump);
-            hex_dump = "     ";
-        }
-    }
-    if (!hex_dump.empty() && hex_dump != "     ")
-    {
-        log_connection_event(hex_dump);
-    }
-
-    // Try to parse typical character creation fields for analysis
-    log_connection_event("ANALYSIS ATTEMPT:");
-    if (packet_data.size() >= 8)
-    {
-        log_connection_event("First 8 bytes: " +
-                             std::to_string(packet_data[0]) + " " + std::to_string(packet_data[1]) + " " +
-                             std::to_string(packet_data[2]) + " " + std::to_string(packet_data[3]) + " " +
-                             std::to_string(packet_data[4]) + " " + std::to_string(packet_data[5]) + " " +
-                             std::to_string(packet_data[6]) + " " + std::to_string(packet_data[7]));
-    }
-
-    log_connection_event("=== USE THESE VALUES IN CharacterSelectionInfo TO AVOID CRASH! ===");
-}
 
 void GameClientConnection::handle_character_create_packet(const std::unique_ptr<ReadablePacket> &packet)
 {
@@ -603,6 +487,69 @@ void GameClientConnection::handle_request_new_character_packet(const std::unique
     }
 }
 
+void GameClientConnection::handle_request_game_start_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        auto *game_start_packet = dynamic_cast<const RequestGameStart *>(packet.get());
+        if (!game_start_packet)
+        {
+            log_connection_event("Failed to cast packet to RequestGameStart");
+            return;
+        }
+
+        // Validate the packet
+        if (!game_start_packet->isValid())
+        {
+            log_connection_event("Invalid RequestGameStart packet received");
+            return;
+        }
+
+        // Get the character object ID from the packet
+        int32_t character_id = game_start_packet->getCharacterObjectId();
+        log_connection_event("RequestGameStart received for character ID: " + std::to_string(character_id));
+
+        // Get character database manager
+        auto *char_db = getCharacterDatabaseManager();
+        if (!char_db)
+        {
+            log_connection_event("Character database manager not available");
+            return;
+        }
+
+        // Verify the character exists and belongs to this account
+        auto character_info = char_db->getCharacterBySlot(player_name_, static_cast<uint32_t>(character_id));
+        if (!character_info)
+        {
+            log_connection_event("Character ID " + std::to_string(character_id) + " not found in database");
+            return;
+        }
+
+        // Verify the character belongs to this player's account
+        if (character_info->login_name != player_name_)
+        {
+            log_connection_event("Character ID " + std::to_string(character_id) + 
+                               " does not belong to account: " + player_name_);
+            return;
+        }
+
+        // Character validation successful - store the selected character
+        set_character_id(static_cast<uint32_t>(character_id));
+        
+        log_connection_event("Character '" + character_info->name + "' (ID: " + 
+                           std::to_string(character_id) + ") selected for account: " + player_name_);
+
+        // TODO: Send appropriate response packet (e.g., enter world confirmation)
+        // TODO: Transition to IN_GAME state
+        // For now, just log successful character selection
+        log_connection_event("Character selection successful - ready to enter game world");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error processing RequestGameStart packet: " + std::string(e.what()));
+    }
+}
+
 // =============================================================================
 // Encryption Management
 // =============================================================================
@@ -620,7 +567,6 @@ void GameClientConnection::send_packet(std::unique_ptr<SendablePacket> packet)
         // Choose padding based on active encryption: XOR uses 4-byte blocks, Blowfish needs 8
         size_t align = game_encryption_ ? 4 : 8;
         auto packet_data = packet->serialize(true, align);
-        log_connection_event("DEBUG: Game packet serialized with " + std::to_string(align) + "-byte padding: " + std::to_string(packet_data.size()) + " bytes");
         send_raw_packet(packet_data);
     }
     catch (const std::exception &e)

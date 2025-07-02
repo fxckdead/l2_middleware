@@ -78,6 +78,7 @@ private:
     static std::unique_ptr<ReadablePacket> createLogoutPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createDeleteCharPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRestoreCharPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestGameStartPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createSelectCharPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createEnterWorldPacket(const std::vector<uint8_t> &rawData);
 
