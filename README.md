@@ -80,7 +80,7 @@ sudo pacman -S ninja
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url> l2middlewares
+git clone git@github.com:fxckdead/l2_middleware.git
 cd l2middlewares
 ```
 
