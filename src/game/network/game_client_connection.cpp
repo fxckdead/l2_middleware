@@ -250,8 +250,6 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             log_connection_event("Received unknown packet opcode: " + std::string(hex_unknown));
             break;
         }
-
-
     }
     catch (const std::exception &e)
     {
@@ -380,7 +378,8 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
 
         // Send CharacterSelectionInfo from database
         auto *char_db = getCharacterDatabaseManager();
-        if (!char_db) {
+        if (!char_db)
+        {
             log_connection_event("ERROR: Character database manager not available during login");
             return;
         }
@@ -400,8 +399,6 @@ void GameClientConnection::handle_request_login_packet(const std::unique_ptr<Rea
         // TODO: Send login failure response
     }
 }
-
-
 
 void GameClientConnection::handle_character_create_packet(const std::unique_ptr<ReadablePacket> &packet)
 {
@@ -526,18 +523,18 @@ void GameClientConnection::handle_request_game_start_packet(const std::unique_pt
         }
 
         // Verify the character belongs to this player's account
-        if (character_info->login_name != player_name_)
+        if ((*character_info)->getAccountName() != player_name_)
         {
-            log_connection_event("Character ID " + std::to_string(character_id) + 
-                               " does not belong to account: " + player_name_);
+            log_connection_event("Character ID " + std::to_string(character_id) +
+                                 " does not belong to account: " + player_name_);
             return;
         }
 
         // Character validation successful - store the selected character
         set_character_id(static_cast<uint32_t>(character_id));
-        
-        log_connection_event("Character '" + character_info->name + "' (ID: " + 
-                           std::to_string(character_id) + ") selected for account: " + player_name_);
+
+        log_connection_event("Character '" + (*character_info)->getName() + "' (ID: " +
+                             std::to_string(character_id) + ") selected for account: " + player_name_);
 
         // TODO: Send appropriate response packet (e.g., enter world confirmation)
         // TODO: Transition to IN_GAME state

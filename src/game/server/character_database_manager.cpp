@@ -18,9 +18,9 @@ uint32_t CharacterDatabaseManager::createCharacter(const std::string &accountNam
     }
 
     // Check if character name already exists
-    for (const auto &[charId, character] : m_characters)
+    for (const auto &[charId, player] : m_characters)
     {
-        if (character.name == characterName)
+        if (player->getName() == characterName)
         {
             return 0; // Character name already exists
         }
@@ -33,14 +33,14 @@ uint32_t CharacterDatabaseManager::createCharacter(const std::string &accountNam
         return 0; // Account has too many characters
     }
 
-    // Generate character ID and create character
+    // Generate character ID and create player
     uint32_t characterId = generateNextCharacterId();
-    CharacterInfo newCharacter = createDefaultCharacter(accountName, characterName, race, sex, classId,
-                                                        hairStyle, hairColor, face);
-    newCharacter.char_id = characterId;
+    auto newPlayer = createDefaultPlayer(accountName, characterName, race, sex, classId,
+                                         hairStyle, hairColor, face);
+    newPlayer->setObjectId(characterId);
 
-    // Store character and update account mapping
-    m_characters[characterId] = newCharacter;
+    // Store player and update account mapping
+    m_characters[characterId] = std::move(newPlayer);
     addCharacterToAccount(accountName, characterId);
 
     return characterId;
@@ -57,7 +57,7 @@ bool CharacterDatabaseManager::deleteCharacter(uint32_t characterId, const std::
     }
 
     // Verify the character belongs to this account
-    if (charIter->second.login_name != accountName)
+    if (charIter->second->getAccountName() != accountName)
     {
         return false; // Character doesn't belong to this account
     }
@@ -73,9 +73,9 @@ bool CharacterDatabaseManager::characterExists(const std::string &characterName)
 {
     std::lock_guard<std::mutex> lock(m_charactersMutex);
 
-    for (const auto &[charId, character] : m_characters)
+    for (const auto &[charId, player] : m_characters)
     {
-        if (character.name == characterName)
+        if (player->getName() == characterName)
         {
             return true;
         }
@@ -98,20 +98,20 @@ bool CharacterDatabaseManager::isValidCharacterName(const std::string &name) con
 }
 
 // Character retrieval
-std::optional<CharacterInfo> CharacterDatabaseManager::getCharacterById(uint32_t characterId) const
+std::optional<Player *> CharacterDatabaseManager::getCharacterById(uint32_t characterId) const
 {
     std::lock_guard<std::mutex> lock(m_charactersMutex);
 
     auto it = m_characters.find(characterId);
     if (it != m_characters.end())
     {
-        return it->second;
+        return it->second.get();
     }
 
     return std::nullopt;
 }
 
-std::optional<CharacterInfo> CharacterDatabaseManager::getCharacterBySlot(const std::string &accountName, uint32_t slotIndex) const
+std::optional<Player *> CharacterDatabaseManager::getCharacterBySlot(const std::string &accountName, uint32_t slotIndex) const
 {
     auto characters = getCharactersForAccount(accountName);
 
@@ -123,26 +123,26 @@ std::optional<CharacterInfo> CharacterDatabaseManager::getCharacterBySlot(const 
     return std::nullopt;
 }
 
-std::optional<CharacterInfo> CharacterDatabaseManager::getCharacterByName(const std::string &characterName) const
+std::optional<Player *> CharacterDatabaseManager::getCharacterByName(const std::string &characterName) const
 {
     std::lock_guard<std::mutex> lock(m_charactersMutex);
 
-    for (const auto &[charId, character] : m_characters)
+    for (const auto &[charId, player] : m_characters)
     {
-        if (character.name == characterName)
+        if (player->getName() == characterName)
         {
-            return character;
+            return player.get();
         }
     }
 
     return std::nullopt;
 }
 
-std::vector<CharacterInfo> CharacterDatabaseManager::getCharactersForAccount(const std::string &accountName) const
+std::vector<Player *> CharacterDatabaseManager::getCharactersForAccount(const std::string &accountName) const
 {
     std::lock_guard<std::mutex> lock(m_charactersMutex);
 
-    std::vector<CharacterInfo> accountCharacters;
+    std::vector<Player *> accountCharacters;
 
     auto accountIter = m_accountCharacters.find(accountName);
     if (accountIter != m_accountCharacters.end())
@@ -154,16 +154,16 @@ std::vector<CharacterInfo> CharacterDatabaseManager::getCharactersForAccount(con
             auto charIter = m_characters.find(characterId);
             if (charIter != m_characters.end())
             {
-                accountCharacters.push_back(charIter->second);
+                accountCharacters.push_back(charIter->second.get());
             }
         }
     }
 
     // Sort by character ID for consistent ordering
     std::sort(accountCharacters.begin(), accountCharacters.end(),
-              [](const CharacterInfo &a, const CharacterInfo &b)
+              [](const Player *a, const Player *b)
               {
-                  return a.char_id < b.char_id;
+                  return a->getObjectId() < b->getObjectId();
               });
 
     return accountCharacters;
@@ -211,7 +211,7 @@ bool CharacterDatabaseManager::updateCharacterLevel(uint32_t characterId, uint32
     auto it = m_characters.find(characterId);
     if (it != m_characters.end())
     {
-        it->second.level = newLevel;
+        it->second->setLevel(newLevel);
         return true;
     }
 
@@ -225,9 +225,7 @@ bool CharacterDatabaseManager::updateCharacterPosition(uint32_t characterId, uin
     auto it = m_characters.find(characterId);
     if (it != m_characters.end())
     {
-        it->second.x = x;
-        it->second.y = y;
-        it->second.z = z;
+        it->second->setPosition(x, y, z);
         return true;
     }
 
@@ -242,7 +240,7 @@ std::vector<uint32_t> CharacterDatabaseManager::getAllCharacterIds() const
     std::vector<uint32_t> characterIds;
     characterIds.reserve(m_characters.size());
 
-    for (const auto &[charId, character] : m_characters)
+    for (const auto &[charId, player] : m_characters)
     {
         characterIds.push_back(charId);
     }
@@ -273,73 +271,64 @@ uint32_t CharacterDatabaseManager::generateNextCharacterId()
     return m_nextCharacterId.fetch_add(1);
 }
 
-CharacterInfo CharacterDatabaseManager::createDefaultCharacter(const std::string &accountName, const std::string &characterName,
-                                                               uint32_t race, uint32_t sex, uint32_t classId,
-                                                               uint32_t hairStyle, uint32_t hairColor, uint32_t face)
+std::unique_ptr<Player> CharacterDatabaseManager::createDefaultPlayer(const std::string &accountName, const std::string &characterName,
+                                                                      uint32_t race, uint32_t sex, uint32_t classId,
+                                                                      uint32_t hairStyle, uint32_t hairColor, uint32_t face)
 {
-    CharacterInfo character;
+    auto player = std::make_unique<Player>(0, characterName, accountName); // ObjectId will be set later
 
     // Basic info
-    character.name = characterName;
-    character.login_name = accountName;
-    character.session_id = 0;    // Will be set during login
-    character.clan_id = 0;       // No clan initially
-    character.builder_level = 0; // Normal player
-    character.sex = sex;
-    character.race = race;
-    character.class_id = classId;
-    character.active = 1; // Character is active
+    player->setSessionId(0); // Will be set during login
+    player->setClanId(0);    // No clan initially
+    player->setRace(race);
+    player->setSex(sex);
+    player->setClassId(classId);
+    player->setBaseClassId(classId); // Base class same as current class initially
 
     // Default starting position (safer coordinates for all races)
-    character.x = -84318;
-    character.y = 244579;
-    character.z = -3730;
+    player->setPosition(-84318, 244579, -3730);
 
     // Default starting stats - Set proper starting HP/MP based on class/race
-    character.level = 1;
-    character.current_hp = 100.0;
-    character.current_mp = 100.0;
-    character.max_hp = 100.0; // Set max HP
-    character.max_mp = 100.0; // Set max MP
-    character.sp = 0;
-    character.exp = 0;
-    character.karma = 0;
-    character.pk_kills = 0;
-    character.pv_kills = 0;
+    player->setLevel(1);
+    player->setCurrentHp(100.0);
+    player->setMaxHp(100.0);
+    player->setCurrentMp(100.0);
+    player->setMaxMp(100.0);
+    player->setSp(0);
+    player->setExp(0);
+    player->setKarma(0);
+    player->setPkKills(0);
+    player->setPvpKills(0);
 
     // Appearance data from character creation
-    character.hair_style = hairStyle;
-    character.hair_color = hairColor;
-    character.face = face;
+    player->setHairStyle(hairStyle);
+    player->setHairColor(hairColor);
+    player->setFace(face);
 
     // Initialize base stats that were missing
     // These should be set based on race/class but for now use defaults
-    character.str_stat = 10;
-    character.dex_stat = 10;
-    character.con_stat = 10;
-    character.int_stat = 10;
-    character.wit_stat = 10;
-    character.men_stat = 10;
+    player->setStr(10);
+    player->setDex(10);
+    player->setCon(10);
+    player->setInt(10);
+    player->setWit(10);
+    player->setMen(10);
 
-    // Equipment slots - Initialize both object and item arrays
-    character.paperdoll_object_ids.resize(16, 0); // Object IDs (all empty)
-    character.paperdoll_item_ids.resize(16, 0);   // Item IDs (all empty)
+    // Equipment slots - Initialize both object and item arrays (already done in Player constructor)
+    // The Player constructor already initializes 16 empty slots
 
     // Character state and deletion
-    character.delete_timer = 0;        // Not scheduled for deletion
-    character.base_class_id = classId; // Base class same as current class initially
-    character.is_selected = 0;         // Not selected by default
-    character.enchant_effect = 0;      // No enchant effect
-    character.augmentation_id = 0;     // No weapon augmentation
+    player->setDeleteTimer(0);    // Not scheduled for deletion
+    player->setEnchantEffect(0);  // No enchant effect
+    player->setAugmentationId(0); // No weapon augmentation
 
     // Add logging to validate character creation
-    std::cout << "[CharDB] Created character: " << characterName
-              << " ID=" << character.char_id
+    std::cout << "[CharDB] Created player: " << characterName
               << " race=" << race << " sex=" << sex << " class=" << classId
-              << " HP=" << character.current_hp << "/" << character.max_hp
-              << " MP=" << character.current_mp << "/" << character.max_mp << std::endl;
+              << " HP=" << player->getCurrentHp() << "/" << player->getMaxHp()
+              << " MP=" << player->getCurrentMp() << "/" << player->getMaxMp() << std::endl;
 
-    return character;
+    return player;
 }
 
 void CharacterDatabaseManager::addCharacterToAccount(const std::string &accountName, uint32_t characterId)
