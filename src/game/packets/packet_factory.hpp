@@ -8,7 +8,7 @@
 #include "requests/new_char_request_packet.hpp"
 #include "requests/create_char_request_packet.hpp"
 #include "requests/logout_packet.hpp"
-#include "requests/delete_char_packet.hpp"
+#include "requests/request_delete_character_packet.hpp"
 #include "requests/restore_char_packet.hpp"
 #include "requests/select_char_packet.hpp"
 #include "requests/enter_world_packet.hpp"
@@ -76,7 +76,7 @@ private:
     static std::unique_ptr<ReadablePacket> createNewCharRequestPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createCreateCharRequestPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createLogoutPacket(const std::vector<uint8_t> &rawData);
-    static std::unique_ptr<ReadablePacket> createDeleteCharPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestCharacterDeletePacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRestoreCharPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestGameStartPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createSelectCharPacket(const std::vector<uint8_t> &rawData);

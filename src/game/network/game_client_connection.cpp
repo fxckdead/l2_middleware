@@ -235,8 +235,8 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x0B: // RequestCharacterCreate - Packet to create a new character in database/memory
             handle_character_create_packet(packet);
             break;
-        case 0x0C: // RequestCharacterDelete
-            log_connection_event("RequestCharacterDelete packet received");
+        case 0x0C: // RequestCharacterDeletePacket
+            log_connection_event("RequestCharacterDeletePacket packet received");
             break;
         case 0x0D: // RequestGameStart (character selection)
             handle_request_game_start_packet(packet);

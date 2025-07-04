@@ -116,7 +116,7 @@ add_executable(L2GameServer
     src/game/packets/requests/create_char_request_packet.cpp
     src/game/packets/requests/request_game_start.cpp
     src/game/packets/requests/logout_packet.cpp
-    src/game/packets/requests/delete_char_packet.cpp
+    src/game/packets/requests/request_delete_character_packet.cpp
     src/game/packets/requests/restore_char_packet.cpp
     src/game/packets/requests/select_char_packet.cpp
     src/game/packets/requests/enter_world_packet.cpp

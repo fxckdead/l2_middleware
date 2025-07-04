@@ -4,13 +4,13 @@
 #include "../../../core/network/packet_buffer.hpp"
 #include <cstdint>
 
-class DeleteCharPacket : public ReadablePacket
+class RequestCharacterDeletePacket : public ReadablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0x0D;
+    static constexpr uint8_t PACKET_ID = 0x0C;
 
 public:
-    DeleteCharPacket() = default;
+    RequestCharacterDeletePacket() = default;
 
     uint8_t getPacketId() const override;
     std::optional<uint16_t> getExPacketId() const override;

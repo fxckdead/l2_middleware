@@ -67,7 +67,7 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
 
     case GameClientPacketType::RequestCharacterDelete:
         // 0x0C - Character deletion
-        return createDeleteCharPacket(packetData);
+        return createRequestCharacterDeletePacket(packetData);
 
     case GameClientPacketType::RequestGameStart:
         // 0x0D - Game start (character selection)
@@ -185,12 +185,12 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createLogoutPacket(const std:
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createDeleteCharPacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestCharacterDeletePacket(const std::vector<uint8_t> &rawData)
 {
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<DeleteCharPacket>();
+        auto packet = std::make_unique<RequestCharacterDeletePacket>();
         packet->read(buffer);
         return packet;
     }
