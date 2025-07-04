@@ -102,6 +102,11 @@ add_executable(L2GameServer
     src/game/server/game_server.cpp
     src/game/server/character_database_manager.cpp
     
+    # Game entities
+    src/game/entities/world_object.cpp
+    src/game/entities/creature.cpp
+    src/game/entities/player.cpp
+    
     # Game-specific networking
     src/game/network/game_connection_manager.cpp
     src/game/network/game_client_connection.cpp
