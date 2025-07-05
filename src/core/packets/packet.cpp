@@ -14,10 +14,8 @@ std::vector<uint8_t> SendablePacket::serialize(bool withPadding, size_t alignmen
 {
     SendablePacketBuffer buffer;
     
-    // Write opcode automatically if enabled (for extended packets)
-    if (shouldWriteOpcodeAutomatically()) {
-        writeOpcode(buffer);
-    }
+    // Write opcode automatically (handles both standard and extended packets)
+    writeOpcode(buffer);
     
     // Write packet data
     write(buffer);

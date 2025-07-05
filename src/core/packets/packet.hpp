@@ -68,9 +68,6 @@ public:
 
     // Helper method to write opcode (handles extended packets automatically)
     void writeOpcode(SendablePacketBuffer &buffer) const;
-    
-    // Control whether opcode is written automatically (for backward compatibility)
-    virtual bool shouldWriteOpcodeAutomatically() const { return false; }
 
     // Get serialized packet data
     virtual std::vector<uint8_t> serialize(bool withPadding = false);

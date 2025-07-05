@@ -22,10 +22,7 @@ void VersionCheckResponse::write(SendablePacketBuffer &buffer)
 {
     // Write VersionCheck packet structure for Interlude Update 3
     // According to protocol: must include dynamic key and opcode obfuscation key
-    // Note: This packet manually writes its opcode because it's a special case
-    // that needs to handle protocol rejection differently
-    
-    buffer.writeUInt8(PACKET_ID);  // Opcode: 0x00 (VersionCheck)
+    // Opcode is written automatically by base class
     
     if (protocol_ok_) {
         // Protocol accepted flag (1 byte)

@@ -34,7 +34,6 @@ public:
     // SendablePacket interface implementation
     uint8_t getPacketId() const override { return PACKET_ID; }
     uint16_t getExtendedPacketId() const override { return EX_PACKET_ID; }
-    bool shouldWriteOpcodeAutomatically() const override { return true; } // Use automatic opcode writing
     void write(SendablePacketBuffer& buffer) override;
     size_t getSize() const override;
 }; 
