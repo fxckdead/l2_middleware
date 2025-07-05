@@ -133,6 +133,7 @@ add_executable(L2GameServer
     src/game/packets/responses/character_selection_info.cpp
     src/game/packets/responses/new_character_success.cpp
     src/game/packets/responses/character_create_success.cpp
+    src/game/packets/responses/character_selected.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

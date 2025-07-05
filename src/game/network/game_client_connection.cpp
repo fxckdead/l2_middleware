@@ -10,6 +10,7 @@
 #include "../packets/responses/character_selection_info.hpp"
 #include "../packets/responses/new_character_success.hpp"
 #include "../packets/responses/character_create_success.hpp"
+#include "../packets/responses/character_selected.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
@@ -483,7 +484,7 @@ void GameClientConnection::handle_request_new_character_packet(const std::unique
         log_connection_event("Error sending NewCharacterSuccess response: " + std::string(e.what()));
     }
 }
-
+// This uses the 0x0D opcode => SelectCharPacket
 void GameClientConnection::handle_request_game_start_packet(const std::unique_ptr<ReadablePacket> &packet)
 {
     try
@@ -536,10 +537,15 @@ void GameClientConnection::handle_request_game_start_packet(const std::unique_pt
         log_connection_event("Character '" + (*character_info)->getName() + "' (ID: " +
                              std::to_string(character_id) + ") selected for account: " + player_name_);
 
-        // TODO: Send appropriate response packet (e.g., enter world confirmation)
-        // TODO: Transition to IN_GAME state
-        // For now, just log successful character selection
-        log_connection_event("Character selection successful - ready to enter game world");
+        // Send CharSelected response packet to confirm character selection
+        auto char_selected_response = std::make_unique<CharacterSelected>(*character_info, session_id_);
+        send_packet(std::move(char_selected_response));
+
+        log_connection_event("CharSelected response sent for character: " + (*character_info)->getName());
+
+        // Transition to IN_GAME state
+        set_game_state(GameState::IN_GAME);
+        log_connection_event("Character selection successful - player now IN_GAME");
     }
     catch (const std::exception &e)
     {
