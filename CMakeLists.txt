@@ -151,6 +151,7 @@ add_executable(L2GameServer
     # Phase 4: Welcome/System packets
     src/game/packets/responses/system_message.cpp
     src/game/packets/responses/ex_show_screen_message.cpp
+    src/game/packets/responses/action_failed.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

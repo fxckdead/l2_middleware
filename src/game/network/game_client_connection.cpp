@@ -28,6 +28,7 @@
 // Phase 4: Welcome/System packets
 #include "../packets/responses/system_message.hpp"
 #include "../packets/responses/ex_show_screen_message.hpp"
+#include "../packets/responses/action_failed.hpp"
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
@@ -707,7 +708,12 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(screen_message_response));
         log_connection_event("ExShowScreenMessage packet sent");
 
-        log_connection_event("Player successfully spawned in world - all Phase 1, 2, 3 & 4 packets sent");
+        // 16. ActionFailed - Signal action completion (removes loading screen)
+        auto action_failed_response = std::make_unique<ActionFailed>();
+        send_packet(std::move(action_failed_response));
+        log_connection_event("ActionFailed packet sent");
+
+        log_connection_event("Player successfully spawned in world - all Phase 1, 2, 3 & 4 packets sent + ActionFailed");
 
     }
     catch (const std::exception &e)
