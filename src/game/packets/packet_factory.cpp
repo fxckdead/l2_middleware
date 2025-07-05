@@ -3,6 +3,8 @@
 #include "requests/no_op_packet.hpp"
 #include "requests/create_char_request_packet.hpp"
 #include "requests/request_game_start.hpp"
+#include "requests/request_skill_cool_time.hpp"
+#include "requests/request_answer_join_pledge.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -76,6 +78,14 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
     case GameClientPacketType::RequestNewCharacter:
         // 0x0E - New character info request
         return createNewCharRequestPacket(packetData);
+
+    case GameClientPacketType::RequestAnswerJoinPledge:
+        // 0x25 - Answer pledge join request
+        return createRequestAnswerJoinPledgePacket(packetData);
+
+    case GameClientPacketType::RequestSkillCoolTime:
+        // 0x9D - Request skill cooldown info
+        return createRequestSkillCoolTimePacket(packetData);
 
     default:
         return createNoOpPacket(packetData);
@@ -355,5 +365,35 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestUserBanInfoPacke
     catch (const std::exception &e)
     {
         throw PacketException("Failed to create RequestUserBanInfo packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestAnswerJoinPledgePacket(const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<RequestAnswerJoinPledge>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestAnswerJoinPledge packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestSkillCoolTimePacket(const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<RequestSkillCoolTime>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestSkillCoolTime packet: " + std::string(e.what()));
     }
 }

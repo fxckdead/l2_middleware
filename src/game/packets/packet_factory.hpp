@@ -17,6 +17,8 @@
 #include "requests/extended/check_char_name_packet.hpp"
 #include "requests/extended/send_client_ini_packet.hpp"
 #include "requests/extended/request_user_ban_info_packet.hpp"
+#include "requests/request_skill_cool_time.hpp"
+#include "requests/request_answer_join_pledge.hpp"
 
 #include <memory>
 #include <vector>
@@ -38,6 +40,8 @@ enum class GameClientPacketType : uint8_t
     RequestCharacterDelete = 0x0C,  // Character deletion
     RequestGameStart = 0x0D,        // Game start (character selection)
     RequestNewCharacter = 0x0E,     // New character info request
+    RequestAnswerJoinPledge = 0x25, // Answer pledge join request
+    RequestSkillCoolTime = 0x9D,    // Request skill cooldown info
     
     // Extended packets (0xD0 + sub-opcode)
     ExtendedPacket = 0xD0
@@ -81,6 +85,8 @@ private:
     static std::unique_ptr<ReadablePacket> createRequestGameStartPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createSelectCharPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createEnterWorldPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestAnswerJoinPledgePacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestSkillCoolTimePacket(const std::vector<uint8_t> &rawData);
 
     // Create extended packet types (NEW - game server complexity)
     static std::unique_ptr<ReadablePacket> createExtendedPacket(const std::vector<uint8_t> &rawData);

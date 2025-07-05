@@ -4,6 +4,11 @@
 #include "../../core/encryption/game_client_encryption.hpp"
 #include "../../core/encryption/login_encryption.hpp"
 #include "../packets/requests/no_op_packet.hpp"
+#include "../packets/requests/request_skill_cool_time.hpp"
+#include "../packets/requests/request_answer_join_pledge.hpp"
+#include "../packets/responses/skill_cool_time.hpp"
+#include "../packets/responses/ask_join_pledge.hpp"
+#include "../packets/responses/system_message.hpp"
 
 // Forward declarations
 class GameConnectionManager;
@@ -90,6 +95,8 @@ private:
     void handle_character_create_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_game_start_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_enter_world_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_skill_cool_time_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_answer_join_pledge_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;

@@ -126,6 +126,8 @@ add_executable(L2GameServer
     src/game/packets/requests/select_char_packet.cpp
     src/game/packets/requests/enter_world_packet.cpp
     src/game/packets/requests/no_op_packet.cpp
+    src/game/packets/requests/request_skill_cool_time.cpp
+    src/game/packets/requests/request_answer_join_pledge.cpp
     
     # Game response packets
     src/game/packets/responses/ping_response.cpp
@@ -148,6 +150,7 @@ add_executable(L2GameServer
     src/game/packets/responses/friend_list.cpp
     src/game/packets/responses/pledge_show_member_list_all.cpp
     src/game/packets/responses/pledge_status_changed.cpp
+    src/game/packets/responses/ask_join_pledge.cpp
     # Phase 4: Welcome/System packets
     src/game/packets/responses/system_message.cpp
     src/game/packets/responses/ex_show_screen_message.cpp

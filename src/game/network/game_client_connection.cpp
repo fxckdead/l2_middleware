@@ -264,6 +264,12 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x0E: // RequestNewCharacter - Packet to show the character creation screen
             handle_request_new_character_packet(packet);
             break;
+        case 0x25: // RequestAnswerJoinPledge
+            handle_request_answer_join_pledge_packet(packet);
+            break;
+        case 0x9D: // RequestSkillCoolTime
+            handle_request_skill_cool_time_packet(packet);
+            break;
         default:
             char hex_unknown[8];
             snprintf(hex_unknown, sizeof(hex_unknown), "0x%02X", actual_opcode);
@@ -804,6 +810,92 @@ void GameClientConnection::on_disconnect()
 {
     log_connection_event("Game client disconnected: " + player_name_);
     set_game_state(GameState::DISCONNECTED);
+}
+
+// =============================================================================
+// New Packet Handlers
+// =============================================================================
+
+void GameClientConnection::handle_request_skill_cool_time_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        log_connection_event("RequestSkillCoolTime packet received");
+
+        // Get character info from database
+        auto *db_manager = getCharacterDatabaseManager();
+        if (!db_manager)
+        {
+            log_connection_event("No database manager available for skill cooldown request");
+            return;
+        }
+
+        auto character_info = db_manager->getCharacterBySlot(player_name_, character_id_);
+        if (!character_info)
+        {
+            log_connection_event("No character info available for skill cooldown request");
+            return;
+        }
+
+        // Send SkillCoolTime response with current cooldown information
+        auto skill_cool_time_response = std::make_unique<SkillCoolTime>(*character_info);
+        send_packet(std::move(skill_cool_time_response));
+        log_connection_event("SkillCoolTime response sent");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error handling RequestSkillCoolTime packet: " + std::string(e.what()));
+    }
+}
+
+void GameClientConnection::handle_request_answer_join_pledge_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        // Cast to RequestAnswerJoinPledge to access pledge data
+        auto *pledge_packet = dynamic_cast<const RequestAnswerJoinPledge *>(packet.get());
+        if (!pledge_packet)
+        {
+            log_connection_event("Failed to cast packet to RequestAnswerJoinPledge");
+            return;
+        }
+
+        uint32_t response = pledge_packet->getResponse();
+        
+        log_connection_event("RequestAnswerJoinPledge received - Response: " + std::string(response == 1 ? "Accept" : "Decline"));
+
+        // TODO: Process pledge join response (matches L2J Mobius implementation)
+        // In a real implementation, this would:
+        // 1. Get the requestor from player's request partner
+        // 2. If response == 0: Send decline messages to both players
+        // 3. If response == 1: 
+        //    - Add player to clan
+        //    - Set pledge type and power grade
+        //    - Send JoinPledge, PledgeShowMemberListAdd, PledgeShowInfoUpdate packets
+        //    - Broadcast clan updates
+        // 4. Clear the request
+        
+        // For now, send a simple response to acknowledge the packet was received
+        // This prevents the client from getting stuck waiting for a response
+        if (response == 1)
+        {
+            // Send a system message indicating the pledge join was accepted
+            auto system_message = std::make_unique<SystemMessage>("Pledge join request accepted (stub)");
+            send_packet(std::move(system_message));
+        }
+        else
+        {
+            // Send a system message indicating the pledge join was declined
+            auto system_message = std::make_unique<SystemMessage>("Pledge join request declined (stub)");
+            send_packet(std::move(system_message));
+        }
+        
+        log_connection_event("Pledge join response processed (stub implementation)");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error handling RequestAnswerJoinPledge packet: " + std::string(e.what()));
+    }
 }
 
 // =============================================================================
