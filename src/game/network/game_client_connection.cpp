@@ -11,6 +11,11 @@
 #include "../packets/responses/new_character_success.hpp"
 #include "../packets/responses/character_create_success.hpp"
 #include "../packets/responses/character_selected.hpp"
+#include "../packets/responses/user_info.hpp"
+#include "../packets/responses/validate_location.hpp"
+#include "../packets/responses/item_list.hpp"
+#include "../packets/responses/skill_cool_time.hpp"
+#include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
@@ -589,12 +594,46 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
 
         log_connection_event("Player entering world - character ID: " + std::to_string(character_id_));
 
-        // TODO: Send essential response packets for player spawning
-        // For now, just log the successful entry
-        log_connection_event("Player successfully entered world - ready to send spawn packets");
+        // Get character data for spawning
+        auto *char_db = getCharacterDatabaseManager();
+        if (!char_db)
+        {
+            log_connection_event("Character database manager not available during EnterWorld");
+            return;
+        }
 
-        // TODO: Send UserInfo, ValidateLocation, ItemList, etc.
-        // This will be implemented in the next steps
+        auto character_info = char_db->getCharacterBySlot(player_name_, character_id_);
+        if (!character_info)
+        {
+            log_connection_event("Character not found during EnterWorld - ID: " + std::to_string(character_id_));
+            return;
+        }
+
+        log_connection_event("Sending essential spawn packets for character: " + (*character_info)->getName());
+
+        // Send essential response packets for player spawning (Phase 1)
+        
+        // 1. UserInfo - Player stats, gear, location (CRITICAL)
+        auto user_info_response = std::make_unique<UserInfo>(*character_info);
+        send_packet(std::move(user_info_response));
+        log_connection_event("UserInfo packet sent");
+
+        // 2. ValidateLocation - Resync position (CRITICAL)
+        auto validate_location_response = std::make_unique<ValidateLocation>(*character_info);
+        send_packet(std::move(validate_location_response));
+        log_connection_event("ValidateLocation packet sent");
+
+        // 3. ItemList - Inventory (CRITICAL)
+        auto item_list_response = std::make_unique<ItemList>(*character_info, false);
+        send_packet(std::move(item_list_response));
+        log_connection_event("ItemList packet sent");
+
+        // 4. SkillCoolTime - Cooldowns (CRITICAL)
+        auto skill_cool_time_response = std::make_unique<SkillCoolTime>(*character_info);
+        send_packet(std::move(skill_cool_time_response));
+        log_connection_event("SkillCoolTime packet sent");
+
+        log_connection_event("Player successfully spawned in world - all essential packets sent");
 
     }
     catch (const std::exception &e)
