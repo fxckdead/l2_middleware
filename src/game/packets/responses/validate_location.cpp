@@ -13,8 +13,7 @@ ValidateLocation::ValidateLocation(const Player* player)
 
 void ValidateLocation::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header
-    buffer.writeUInt8(PACKET_ID); // 0x79 ValidateLocation
+    // Opcode is written automatically by base class
 
     std::cout << "[ValidateLocation] Sending position validation for: " << player_->getName() 
               << " at (" << player_->getX() << ", " << player_->getY() << ", " << player_->getZ() << ")" << std::endl;

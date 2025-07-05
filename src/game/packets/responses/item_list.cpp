@@ -13,8 +13,7 @@ ItemList::ItemList(const Player* player, bool showWindow)
 
 void ItemList::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header
-    buffer.writeUInt8(PACKET_ID); // 0x11 ItemList
+    // Opcode is written automatically by base class
 
     std::cout << "[ItemList] Sending inventory for: " << player_->getName() 
               << " (show window: " << (show_window_ ? "yes" : "no") << ")" << std::endl;

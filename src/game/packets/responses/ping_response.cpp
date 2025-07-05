@@ -13,8 +13,7 @@ void PingResponse::write(SendablePacketBuffer &buffer)
 {
     try
     {
-        // Write packet ID (same as received ping)
-        buffer.writeUInt8(PACKET_ID);
+        // Opcode is written automatically by base class
         
         // Echo back the ping data
         buffer.writeBytes(ping_data_);

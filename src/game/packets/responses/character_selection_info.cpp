@@ -24,8 +24,7 @@ std::unique_ptr<CharacterSelectionInfo> CharacterSelectionInfo::createFromDataba
 
 void CharacterSelectionInfo::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header - using 0x13 for Interlude Update 3
-    buffer.writeUInt8(PACKET_ID); // 0x13 CharacterSelectionInfo
+    // Opcode is written automatically by base class
 
     // Character count
     uint32_t char_count = static_cast<uint32_t>(characters_.size());

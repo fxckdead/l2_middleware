@@ -13,8 +13,7 @@ UserInfo::UserInfo(const Player* player)
 
 void UserInfo::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header
-    buffer.writeUInt8(PACKET_ID); // 0x32 UserInfo
+    // Opcode is written automatically by base class
 
     std::cout << "[UserInfo] Sending user info for: " << player_->getName() 
               << " (ID: " << player_->getObjectId() << ")" << std::endl;

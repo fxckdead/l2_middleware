@@ -13,8 +13,7 @@ SkillCoolTime::SkillCoolTime(const Player* player)
 
 void SkillCoolTime::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header
-    buffer.writeUInt8(PACKET_ID); // 0xC7 SkillCoolTime
+    // Opcode is written automatically by base class
 
     std::cout << "[SkillCoolTime] Sending skill cooldowns for: " << player_->getName() << std::endl;
 

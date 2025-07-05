@@ -12,8 +12,8 @@ void CharacterCreateSuccess::write(SendablePacketBuffer &buffer)
 {
     try
     {
-        // Write packet ID (same as received ping)
-        buffer.writeUInt8(PACKET_ID);
+        // Opcode is written automatically by base class
+        // No additional data needed for this packet
     }
     catch (const std::exception &e)
     {

@@ -12,11 +12,12 @@ void NewCharacterSuccess::write(SendablePacketBuffer &buffer)
 {
     try
     {
-        buffer.writeUInt8(PACKET_ID);
+        // Opcode is written automatically by base class
+        // No additional data needed for this packet
     }
     catch (const std::exception &e)
     {
-        throw std::runtime_error("Failed to write PingResponse packet: " + std::string(e.what()));
+        throw std::runtime_error("Failed to write NewCharacterSuccess packet: " + std::string(e.what()));
     }
 }
 

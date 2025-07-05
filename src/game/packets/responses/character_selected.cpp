@@ -13,8 +13,7 @@ CharacterSelected::CharacterSelected(const Player* player, uint32_t sessionId)
 
 void CharacterSelected::write(SendablePacketBuffer &buffer)
 {
-    // Write packet header
-    buffer.writeUInt8(PACKET_ID); // 0x15 CharacterSelected
+    // Opcode is written automatically by base class
 
     std::cout << "[CharacterSelected] Sending character data for: " << player_->getName() 
               << " (ID: " << player_->getObjectId() << ")" << std::endl;

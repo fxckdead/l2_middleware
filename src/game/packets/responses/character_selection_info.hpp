@@ -25,6 +25,7 @@ public:
     // SendablePacket interface implementation
     uint8_t getPacketId() const override { return PACKET_ID; }
     std::optional<uint16_t> getExPacketId() const override { return std::nullopt; }
+    bool shouldWriteOpcodeAutomatically() const override { return true; }
     void write(SendablePacketBuffer &buffer) override;
     size_t getSize() const override;
 };
