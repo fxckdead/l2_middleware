@@ -15,6 +15,10 @@
 #include "../packets/responses/validate_location.hpp"
 #include "../packets/responses/item_list.hpp"
 #include "../packets/responses/skill_cool_time.hpp"
+#include "../packets/responses/shortcut_init.hpp"
+#include "../packets/responses/etc_status_update.hpp"
+#include "../packets/responses/ex_storage_max_count.hpp"
+#include "../packets/responses/quest_list.hpp"
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
@@ -633,7 +637,29 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(skill_cool_time_response));
         log_connection_event("SkillCoolTime packet sent");
 
-        log_connection_event("Player successfully spawned in world - all essential packets sent");
+        // Send Phase 2: Basic UI Packets
+        
+        // 5. ShortcutInit - Skill/item shortcuts
+        auto shortcut_init_response = std::make_unique<ShortcutInit>(*character_info);
+        send_packet(std::move(shortcut_init_response));
+        log_connection_event("ShortcutInit packet sent");
+
+        // 6. EtcStatusUpdate - Status icons (weight, soulshots, etc.)
+        auto etc_status_response = std::make_unique<EtcStatusUpdate>(*character_info);
+        send_packet(std::move(etc_status_response));
+        log_connection_event("EtcStatusUpdate packet sent");
+
+        // 7. ExStorageMaxCount - Inventory/warehouse limits
+        auto storage_max_response = std::make_unique<ExStorageMaxCount>(*character_info);
+        send_packet(std::move(storage_max_response));
+        log_connection_event("ExStorageMaxCount packet sent");
+
+        // 8. QuestList - Active quests (empty for now)
+        auto quest_list_response = std::make_unique<QuestList>(*character_info);
+        send_packet(std::move(quest_list_response));
+        log_connection_event("QuestList packet sent");
+
+        log_connection_event("Player successfully spawned in world - all Phase 1 & 2 packets sent");
 
     }
     catch (const std::exception &e)

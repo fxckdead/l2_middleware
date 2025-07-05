@@ -138,6 +138,10 @@ add_executable(L2GameServer
     src/game/packets/responses/validate_location.cpp
     src/game/packets/responses/item_list.cpp
     src/game/packets/responses/skill_cool_time.cpp
+    src/game/packets/responses/shortcut_init.cpp
+    src/game/packets/responses/etc_status_update.cpp
+    src/game/packets/responses/ex_storage_max_count.cpp
+    src/game/packets/responses/quest_list.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)
