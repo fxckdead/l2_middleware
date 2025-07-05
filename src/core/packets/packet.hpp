@@ -56,10 +56,21 @@ public:
 
     // Packet identification
     virtual uint8_t getPacketId() const = 0;
-    virtual std::optional<uint16_t> getExPacketId() const = 0;
+    
+    // Extended packet identification (returns 0 for standard packets)
+    virtual uint16_t getExtendedPacketId() const { return 0; }
+    
+    // Legacy method for backward compatibility (deprecated - use getExtendedPacketId instead)
+    virtual std::optional<uint16_t> getExPacketId() const { return std::nullopt; }
 
     // Write packet data to buffer
     virtual void write(SendablePacketBuffer &buffer) = 0;
+
+    // Helper method to write opcode (handles extended packets automatically)
+    void writeOpcode(SendablePacketBuffer &buffer) const;
+    
+    // Control whether opcode is written automatically (for backward compatibility)
+    virtual bool shouldWriteOpcodeAutomatically() const { return false; }
 
     // Get serialized packet data
     virtual std::vector<uint8_t> serialize(bool withPadding = false);
