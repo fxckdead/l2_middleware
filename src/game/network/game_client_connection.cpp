@@ -19,6 +19,12 @@
 #include "../packets/responses/etc_status_update.hpp"
 #include "../packets/responses/ex_storage_max_count.hpp"
 #include "../packets/responses/quest_list.hpp"
+// Phase 3: Social/Clan packets
+#include "../packets/responses/henna_info.hpp"
+#include "../packets/responses/pledge_skill_list.hpp"
+#include "../packets/responses/friend_list.hpp"
+#include "../packets/responses/pledge_show_member_list_all.hpp"
+#include "../packets/responses/pledge_status_changed.hpp"
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
@@ -659,7 +665,34 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(quest_list_response));
         log_connection_event("QuestList packet sent");
 
-        log_connection_event("Player successfully spawned in world - all Phase 1 & 2 packets sent");
+        // Send Phase 3: Social/Clan Packets
+        
+        // 9. HennaInfo - Active henna (dye) information
+        auto henna_info_response = std::make_unique<HennaInfo>(*character_info);
+        send_packet(std::move(henna_info_response));
+        log_connection_event("HennaInfo packet sent");
+
+        // 10. PledgeSkillList - Clan skills (extended packet)
+        auto pledge_skill_list_response = std::make_unique<PledgeSkillList>(*character_info);
+        send_packet(std::move(pledge_skill_list_response));
+        log_connection_event("PledgeSkillList packet sent");
+
+        // 11. FriendList - Friend list information
+        auto friend_list_response = std::make_unique<FriendList>(*character_info);
+        send_packet(std::move(friend_list_response));
+        log_connection_event("FriendList packet sent");
+
+        // 12. PledgeShowMemberListAll - Clan member list
+        auto pledge_member_list_response = std::make_unique<PledgeShowMemberListAll>(*character_info);
+        send_packet(std::move(pledge_member_list_response));
+        log_connection_event("PledgeShowMemberListAll packet sent");
+
+        // 13. PledgeStatusChanged - Clan status updates
+        auto pledge_status_response = std::make_unique<PledgeStatusChanged>(*character_info);
+        send_packet(std::move(pledge_status_response));
+        log_connection_event("PledgeStatusChanged packet sent");
+
+        log_connection_event("Player successfully spawned in world - all Phase 1, 2 & 3 packets sent");
 
     }
     catch (const std::exception &e)

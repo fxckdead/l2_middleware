@@ -142,6 +142,12 @@ add_executable(L2GameServer
     src/game/packets/responses/etc_status_update.cpp
     src/game/packets/responses/ex_storage_max_count.cpp
     src/game/packets/responses/quest_list.cpp
+    # Phase 3: Social/Clan packets
+    src/game/packets/responses/henna_info.cpp
+    src/game/packets/responses/pledge_skill_list.cpp
+    src/game/packets/responses/friend_list.cpp
+    src/game/packets/responses/pledge_show_member_list_all.cpp
+    src/game/packets/responses/pledge_status_changed.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)
