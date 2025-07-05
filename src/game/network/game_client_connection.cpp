@@ -25,6 +25,9 @@
 #include "../packets/responses/friend_list.hpp"
 #include "../packets/responses/pledge_show_member_list_all.hpp"
 #include "../packets/responses/pledge_status_changed.hpp"
+// Phase 4: Welcome/System packets
+#include "../packets/responses/system_message.hpp"
+#include "../packets/responses/ex_show_screen_message.hpp"
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
@@ -692,7 +695,19 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(pledge_status_response));
         log_connection_event("PledgeStatusChanged packet sent");
 
-        log_connection_event("Player successfully spawned in world - all Phase 1, 2 & 3 packets sent");
+        // Send Phase 4: Welcome/System Packets
+        
+        // 14. SystemMessage - Welcome message
+        auto system_message_response = std::make_unique<SystemMessage>("Welcome to the server!");
+        send_packet(std::move(system_message_response));
+        log_connection_event("SystemMessage packet sent");
+
+        // 15. ExShowScreenMessage - Welcome popup
+        auto screen_message_response = std::make_unique<ExShowScreenMessage>("Welcome to Lineage 2!", 5, 5000);
+        send_packet(std::move(screen_message_response));
+        log_connection_event("ExShowScreenMessage packet sent");
+
+        log_connection_event("Player successfully spawned in world - all Phase 1, 2, 3 & 4 packets sent");
 
     }
     catch (const std::exception &e)
