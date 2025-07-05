@@ -714,7 +714,12 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(screen_message_response));
         log_connection_event("ExShowScreenMessage packet sent");
 
-        // 16. ActionFailed - Signal action completion (removes loading screen)
+        // 16. NpcHtmlMessage - Hola Mundo test message
+        auto html_message = std::make_unique<NpcHtmlMessage>(0, "<html><body>Hola Mundo! Welcome to our Lineage 2 server!</body></html>");
+        send_packet(std::move(html_message));
+        log_connection_event("NpcHtmlMessage packet sent");
+
+        // 17. ActionFailed - Signal action completion (removes loading screen)
         auto action_failed_response = std::make_unique<ActionFailed>();
         send_packet(std::move(action_failed_response));
         log_connection_event("ActionFailed packet sent");

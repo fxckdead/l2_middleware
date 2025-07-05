@@ -9,6 +9,7 @@
 #include "../packets/responses/skill_cool_time.hpp"
 #include "../packets/responses/ask_join_pledge.hpp"
 #include "../packets/responses/system_message.hpp"
+#include "../packets/responses/npc_html_message.hpp"
 
 // Forward declarations
 class GameConnectionManager;
