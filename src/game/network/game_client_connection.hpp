@@ -89,6 +89,7 @@ private:
     void handle_request_new_character_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_character_create_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_game_start_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_enter_world_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;

@@ -219,7 +219,7 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             log_connection_event("Say packet received");
             break;
         case 0x03: // RequestEnterWorld
-            log_connection_event("RequestEnterWorld packet received");
+            handle_enter_world_packet(packet);
             break;
         case 0x04: // Action (not unknown - this is an action packet!)
             log_connection_event("Action packet received (attack, pickup, etc)");
@@ -550,6 +550,56 @@ void GameClientConnection::handle_request_game_start_packet(const std::unique_pt
     catch (const std::exception &e)
     {
         log_connection_event("Error processing RequestGameStart packet: " + std::string(e.what()));
+    }
+}
+
+void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        auto *enter_world_packet = dynamic_cast<const EnterWorldPacket *>(packet.get());
+        if (!enter_world_packet)
+        {
+            log_connection_event("Failed to cast packet to EnterWorldPacket");
+            return;
+        }
+
+        // Validate the packet
+        if (!enter_world_packet->isValid())
+        {
+            log_connection_event("Invalid EnterWorld packet received");
+            return;
+        }
+
+        log_connection_event("EnterWorld packet received: " + enter_world_packet->toString());
+
+        // Verify player is in correct state
+        if (!is_game_state(GameState::IN_GAME))
+        {
+            log_connection_event("EnterWorld received but player not in IN_GAME state");
+            return;
+        }
+
+        // Verify character is selected
+        if (character_id_ < 0)
+        {
+            log_connection_event("EnterWorld received but no character selected");
+            return;
+        }
+
+        log_connection_event("Player entering world - character ID: " + std::to_string(character_id_));
+
+        // TODO: Send essential response packets for player spawning
+        // For now, just log the successful entry
+        log_connection_event("Player successfully entered world - ready to send spawn packets");
+
+        // TODO: Send UserInfo, ValidateLocation, ItemList, etc.
+        // This will be implemented in the next steps
+
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error processing EnterWorld packet: " + std::string(e.what()));
     }
 }
 
