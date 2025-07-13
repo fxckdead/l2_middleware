@@ -151,6 +151,7 @@ add_executable(L2GameServer
     src/game/packets/responses/move_to_location.cpp
     src/game/packets/responses/ex_set_compass_zone_code.cpp
     src/game/packets/responses/creature_say.cpp
+    src/game/packets/responses/npc_info.cpp
     # Social/Clan packets
     src/game/packets/responses/henna_info.cpp
     src/game/packets/responses/pledge_skill_list.cpp
