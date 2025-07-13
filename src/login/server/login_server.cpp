@@ -199,7 +199,6 @@ void LoginServer::initialize_server()
 
     connection_manager_ = std::make_unique<LoginConnectionManager>(io_context_, conn_config, game_server_manager_.get());
 
-    // Add some test servers for demonstration
     registerTestServers();
 
     log_server_event("Server initialized");
@@ -321,8 +320,7 @@ void LoginServer::registerTestServers()
     {
         return;
     }
-    // Register 10 test servers with randomized properties
-    for (int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= 1; i++) {
         ServerData testServer;
         testServer.ip = "127.0.0.1";
         testServer.port = 7777 + i - 1; // Increment port for each server

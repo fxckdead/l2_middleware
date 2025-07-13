@@ -21,10 +21,7 @@ std::optional<uint16_t> AuthGGResponse::getExPacketId() const
 
 void AuthGGResponse::write(SendablePacketBuffer &buffer)
 {
-    // Write packet structure according to Rust implementation:
     // Opcode + Session ID + 4 zero int32s (GameGuard placeholders) + padding for 4-byte alignment
-
-    buffer.writeUInt8(OPCODE);      // Opcode: 0x0B (GgAuth)
     buffer.writeInt32(m_sessionId); // Session ID: validated session
 
     // Write 4 zero int32s as GameGuard placeholders
