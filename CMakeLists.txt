@@ -147,7 +147,8 @@ add_executable(L2GameServer
     src/game/packets/responses/etc_status_update.cpp
     src/game/packets/responses/ex_storage_max_count.cpp
     src/game/packets/responses/quest_list.cpp
-    # Phase 3: Social/Clan packets
+    src/game/packets/responses/send_macro_list.cpp
+    # Social/Clan packets
     src/game/packets/responses/henna_info.cpp
     src/game/packets/responses/pledge_skill_list.cpp
     src/game/packets/responses/friend_list.cpp
@@ -159,7 +160,7 @@ add_executable(L2GameServer
     src/game/packets/responses/skill_list.cpp
     src/game/packets/responses/status_update.cpp
     src/game/packets/responses/char_info.cpp
-    # Phase 4: Welcome/System packets
+    # Welcome/System packets
     src/game/packets/responses/system_message.cpp
     src/game/packets/responses/ex_show_screen_message.cpp
     src/game/packets/responses/action_failed.cpp
