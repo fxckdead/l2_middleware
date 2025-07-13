@@ -148,6 +148,7 @@ add_executable(L2GameServer
     src/game/packets/responses/ex_storage_max_count.cpp
     src/game/packets/responses/quest_list.cpp
     src/game/packets/responses/send_macro_list.cpp
+    src/game/packets/responses/move_to_location.cpp
     # Social/Clan packets
     src/game/packets/responses/henna_info.cpp
     src/game/packets/responses/pledge_skill_list.cpp
