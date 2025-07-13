@@ -29,6 +29,11 @@
 #include "../packets/responses/system_message.hpp"
 #include "../packets/responses/ex_show_screen_message.hpp"
 #include "../packets/responses/action_failed.hpp"
+#include "../packets/responses/skill_list.hpp"
+#include "../packets/responses/status_update.hpp"
+#include "../packets/responses/char_info.hpp"
+#include "../packets/responses/show_mini_map.hpp"
+
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../server/game_server.hpp"
@@ -113,6 +118,7 @@ void GameClientConnection::handle_complete_packet(std::vector<uint8_t> packet_da
         catch (const PacketException &e)
         {
             log_connection_event("Packet creation error: " + std::string(e.what()));
+            log_connection_event("CRITICAL: Client may be waiting for response to unknown packet - this could cause loading screen hang");
             // Continue processing other packets - don't disconnect for unknown packets
         }
     }
@@ -264,16 +270,30 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x0E: // RequestNewCharacter - Packet to show the character creation screen
             handle_request_new_character_packet(packet);
             break;
+        case 0x0F: // RequestItemList - Client requesting inventory item list
+            handle_request_item_list_packet(packet);
+            break;
         case 0x25: // RequestAnswerJoinPledge
             handle_request_answer_join_pledge_packet(packet);
             break;
         case 0x9D: // RequestSkillCoolTime
             handle_request_skill_cool_time_packet(packet);
             break;
+        case 0xCD: // RequestShowMiniMap
+            handle_request_show_mini_map_packet(packet);
+            break;
+        case 0xD0: // Extended packets (already handled by packet factory, but log here)
+            log_connection_event("Extended packet processed by factory");
+            // Check if this is a RequestManorList packet
+            if (auto* manor_packet = dynamic_cast<const RequestManorList*>(packet.get())) {
+                handle_request_manor_list_packet(packet);
+            }
+            break;
         default:
             char hex_unknown[8];
             snprintf(hex_unknown, sizeof(hex_unknown), "0x%02X", actual_opcode);
             log_connection_event("Received unknown packet opcode: " + std::string(hex_unknown));
+            log_connection_event("WARNING: Unknown packet may require response - client could be waiting");
             break;
         }
     }
@@ -629,48 +649,63 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
             return;
         }
 
-        log_connection_event("Sending essential spawn packets for character: " + (*character_info)->getName());
+        log_connection_event("Sending spawn packets for character: " + (*character_info)->getName());
 
         // Send essential response packets for player spawning (Phase 1)
         
-        // 1. UserInfo - Player stats, gear, location (CRITICAL)
+        // 1. UserInfo - Player stats, gear, location
         auto user_info_response = std::make_unique<UserInfo>(*character_info);
         send_packet(std::move(user_info_response));
         log_connection_event("UserInfo packet sent");
 
-        // 2. ValidateLocation - Resync position (CRITICAL)
+        // 2. CharInfo - Character object info for world visibility
+        auto char_info_response = std::make_unique<CharInfo>(*character_info);
+        send_packet(std::move(char_info_response));
+        log_connection_event("CharInfo packet sent");
+
+        // 3. SkillList - Player skills
+        auto skill_list_response = std::make_unique<SkillList>(*character_info);
+        send_packet(std::move(skill_list_response));
+        log_connection_event("SkillList packet sent");
+
+        // 4. StatusUpdate - HP/MP/CP status
+        auto status_update_response = std::make_unique<StatusUpdate>(*character_info);
+        send_packet(std::move(status_update_response));
+        log_connection_event("StatusUpdate packet sent");
+
+        // 5. ValidateLocation - Resync position
         auto validate_location_response = std::make_unique<ValidateLocation>(*character_info);
         send_packet(std::move(validate_location_response));
         log_connection_event("ValidateLocation packet sent");
 
-        // 3. ItemList - Inventory (CRITICAL)
+        // 6. ItemList - Inventory
         auto item_list_response = std::make_unique<ItemList>(*character_info, false);
         send_packet(std::move(item_list_response));
         log_connection_event("ItemList packet sent");
 
-        // 4. SkillCoolTime - Cooldowns (CRITICAL)
+        // 7. SkillCoolTime - Cooldowns
         auto skill_cool_time_response = std::make_unique<SkillCoolTime>(*character_info);
         send_packet(std::move(skill_cool_time_response));
         log_connection_event("SkillCoolTime packet sent");
 
-        // Send Phase 2: Basic UI Packets
+        // Phase 2: Basic UI Packets
         
-        // 5. ShortcutInit - Skill/item shortcuts
+        // 8. ShortcutInit - Skill/item shortcuts
         auto shortcut_init_response = std::make_unique<ShortcutInit>(*character_info);
         send_packet(std::move(shortcut_init_response));
         log_connection_event("ShortcutInit packet sent");
 
-        // 6. EtcStatusUpdate - Status icons (weight, soulshots, etc.)
+        // 9. EtcStatusUpdate - Status icons (weight, soulshots, etc.)
         auto etc_status_response = std::make_unique<EtcStatusUpdate>(*character_info);
         send_packet(std::move(etc_status_response));
         log_connection_event("EtcStatusUpdate packet sent");
 
-        // 7. ExStorageMaxCount - Inventory/warehouse limits
+        // 10. ExStorageMaxCount - Inventory/warehouse limits
         auto storage_max_response = std::make_unique<ExStorageMaxCount>(*character_info);
         send_packet(std::move(storage_max_response));
         log_connection_event("ExStorageMaxCount packet sent");
 
-        // 8. QuestList - Active quests (empty for now)
+        // 11. QuestList - Active quests (empty for now)
         auto quest_list_response = std::make_unique<QuestList>(*character_info);
         send_packet(std::move(quest_list_response));
         log_connection_event("QuestList packet sent");
@@ -714,17 +749,22 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
         send_packet(std::move(screen_message_response));
         log_connection_event("ExShowScreenMessage packet sent");
 
-        // 16. NpcHtmlMessage - Hola Mundo test message
+        // 16. NpcHtmlMessage - Welcome message
         auto html_message = std::make_unique<NpcHtmlMessage>(0, "<html><body>Hola Mundo! Welcome to our Lineage 2 server!</body></html>");
         send_packet(std::move(html_message));
         log_connection_event("NpcHtmlMessage packet sent");
 
-        // 17. ActionFailed - Signal action completion (removes loading screen)
-        auto action_failed_response = std::make_unique<ActionFailed>();
-        send_packet(std::move(action_failed_response));
-        log_connection_event("ActionFailed packet sent");
+        log_connection_event("Player successfully spawned in world");
+        
+        // Send final sequence matching L2J Mobius
+        auto final_validate_location = std::make_unique<ValidateLocation>(*character_info);
+        send_packet(std::move(final_validate_location));
+        log_connection_event("Final ValidateLocation sent");
 
-        log_connection_event("Player successfully spawned in world - all Phase 1, 2, 3 & 4 packets sent + ActionFailed");
+        // ActionFailed must be the absolute LAST packet
+        auto final_action_failed = std::make_unique<ActionFailed>();
+        send_packet(std::move(final_action_failed));
+        log_connection_event("ActionFailed sent - spawn sequence complete");
 
     }
     catch (const std::exception &e)
@@ -900,6 +940,73 @@ void GameClientConnection::handle_request_answer_join_pledge_packet(const std::u
     catch (const std::exception &e)
     {
         log_connection_event("Error handling RequestAnswerJoinPledge packet: " + std::string(e.what()));
+    }
+}
+
+void GameClientConnection::handle_request_item_list_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        log_connection_event("RequestItemList packet received - client wants inventory refresh");
+
+        // Get character info from database
+        auto *db_manager = getCharacterDatabaseManager();
+        if (!db_manager)
+        {
+            log_connection_event("No database manager available for inventory request");
+            return;
+        }
+
+        auto character_info = db_manager->getCharacterBySlot(player_name_, character_id_);
+        if (!character_info)
+        {
+            log_connection_event("No character info available for inventory request");
+            return;
+        }
+
+        // Send ItemList response with current inventory (showWindow=true to test if it prevents crash)
+        auto item_list_response = std::make_unique<ItemList>(*character_info, true);
+        send_packet(std::move(item_list_response));
+        log_connection_event("ItemList response sent - inventory refreshed (testing showWindow=true)");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error handling RequestItemList packet: " + std::string(e.what()));
+    }
+}
+
+void GameClientConnection::handle_request_manor_list_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        log_connection_event("RequestManorList packet received");
+
+        // Send ExSendManorList response (matches L2J Mobius implementation)
+        auto manor_list_response = std::make_unique<ExSendManorList>();
+        send_packet(std::move(manor_list_response));
+        log_connection_event("ExSendManorList response sent");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error handling RequestManorList packet: " + std::string(e.what()));
+    }
+}
+
+void GameClientConnection::handle_request_show_mini_map_packet(const std::unique_ptr<ReadablePacket> &packet)
+{
+    try
+    {
+        log_connection_event("RequestShowMiniMap packet received (0xCD) - client requesting minimap display");
+
+        // Send ShowMiniMap response (matches L2J Mobius implementation)
+        // player.sendPacket(new ShowMiniMap(1665));
+        auto show_mini_map_response = std::make_unique<ShowMiniMap>(1665);
+        send_packet(std::move(show_mini_map_response));
+        log_connection_event("ShowMiniMap response sent with map ID 1665");
+    }
+    catch (const std::exception &e)
+    {
+        log_connection_event("Error handling RequestShowMiniMap packet: " + std::string(e.what()));
     }
 }
 

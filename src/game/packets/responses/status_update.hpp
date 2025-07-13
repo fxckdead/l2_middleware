@@ -4,20 +4,18 @@
 #include "../../../core/network/packet_buffer.hpp"
 #include "../../entities/player.hpp"
 #include <cstdint>
-#include <vector>
 
-// ItemList - Server response with player inventory contents
-// Shows all items in player's inventory
-class ItemList : public SendablePacket
+// StatusUpdate - Server packet to update player's HP/MP/CP status
+// Critical packet that client expects to know current health/mana status
+class StatusUpdate : public SendablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0x1B; // ItemList - Interlude Update 3 (FIXED: was 0x11=BuyList)
+    static constexpr uint8_t PACKET_ID = 0x0E; // StatusUpdate - Interlude Update 3
     const Player* player_;
-    bool show_window_; // Whether to show inventory window
 
 public:
     // Constructor - create with player data
-    explicit ItemList(const Player* player, bool showWindow = false);
+    explicit StatusUpdate(const Player* player);
 
     // SendablePacket interface implementation
     uint8_t getPacketId() const override { return PACKET_ID; }

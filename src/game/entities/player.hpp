@@ -6,13 +6,11 @@
 #include <vector>
 #include <memory>
 
-    // Forward declarations for stubbed classes
-    class Clan;
-    class Party;
-    class Skill;
-    class Item;
-    
-
+// Forward declarations for stubbed classes
+class Clan;
+class Party;
+class Skill;
+class Item;
 
 // Player class - represents a player character in the game
 class Player : public Creature
@@ -22,9 +20,9 @@ private:
     std::string accountName_;
     uint32_t sessionId_;
     uint32_t clanId_;
-    uint32_t race_;           // 0=human, 1=elf, 2=dark_elf, 3=orc, 4=dwarf
+    uint32_t race_; // 0=human, 1=elf, 2=dark_elf, 3=orc, 4=dwarf
     uint32_t classId_;
-    uint32_t sex_;            // 0=male, 1=female
+    uint32_t sex_; // 0=male, 1=female
     uint32_t face_;
     uint32_t hairStyle_;
     uint32_t hairColor_;
@@ -36,102 +34,102 @@ private:
     uint32_t deleteTimer_;
     uint32_t enchantEffect_;
     uint32_t augmentationId_;
-    
+
     // Equipment (paperdoll) - 16 slots each
     std::vector<uint32_t> paperdollObjectIds_;
     std::vector<uint32_t> paperdollItemIds_;
 
     // Stubbed properties (return defaults)
-    std::vector<uint32_t> skills_;           // Stub: return empty vector
-    Clan* clan_;                             // Stub: return nullptr
-    Party* party_;                           // Stub: return nullptr
-    std::vector<Item*> inventory_;           // Stub: return empty vector
-    bool isOnline_;                          // Stub: return false
-    bool isInDuel_;                          // Stub: return false
-    bool isNoble_;                           // Stub: return false
-    bool isHero_;                            // Stub: return false
-    uint32_t accessLevel_;                   // Stub: return 0
-    uint32_t mountNpcId_;                    // Stub: return 0
-    uint32_t mountLevel_;                    // Stub: return 0
-    uint32_t mountObjectId_;                 // Stub: return 0
-    uint32_t agathionId_;                    // Stub: return 0
-    uint32_t vitalityPoints_;                // Stub: return 0
-    uint32_t pcCafePoints_;                  // Stub: return 0
-    uint32_t onlineTime_;                    // Stub: return 0
-    uint32_t lastAccess_;                    // Stub: return 0
-    uint32_t createDate_;                    // Stub: return 0
-    uint32_t lastRecomUpdate_;               // Stub: return 0
-    uint32_t recomHave_;                     // Stub: return 0
-    uint32_t recomLeft_;                     // Stub: return 0
-    uint32_t deathPenaltyBuffLevel_;         // Stub: return 0
-    uint32_t charges_;                       // Stub: return 0
-    uint32_t powerGrade_;                    // Stub: return 0
-    uint32_t pledgeClass_;                   // Stub: return 0
-    uint32_t pledgeType_;                    // Stub: return 0
-    uint32_t apprentice_;                    // Stub: return 0
-    uint32_t sponsor_;                       // Stub: return 0
-    uint32_t clanJoinExpiryTime_;            // Stub: return 0
-    uint32_t clanCreateExpiryTime_;          // Stub: return 0
-    uint32_t lvlJoinedAcademy_;              // Stub: return 0
-    uint32_t wantsPeace_;                    // Stub: return 0
-    uint32_t partyRoom_;                     // Stub: return 0
-    uint32_t siegeState_;                    // Stub: return 0
-    uint32_t siegeSide_;                     // Stub: return 0
-    uint32_t olympiadGameId_;                // Stub: return 0
-    uint32_t olympiadSide_;                  // Stub: return 0
-    uint32_t olympiadBuffCount_;             // Stub: return 0
-    uint32_t duelId_;                        // Stub: return 0
-    uint32_t duelState_;                     // Stub: return 0
-    uint32_t pvpFlag_;                       // Stub: return 0
-    uint32_t pvpFlagLasts_;                  // Stub: return 0
-    uint32_t teleMode_;                      // Stub: return 0
-    uint32_t partyDistributionType_;         // Stub: return 0
-    uint32_t privateStoreType_;              // Stub: return 0
-    uint32_t dietMode_;                      // Stub: return 0
-    uint32_t tradeRefusal_;                  // Stub: return 0
-    uint32_t exchangeRefusal_;               // Stub: return 0
-    uint32_t messageRefusal_;                // Stub: return 0
-    uint32_t silenceMode_;                   // Stub: return 0
-    uint32_t inventoryBlockingStatus_;       // Stub: return 0
-    uint32_t expertiseArmorPenalty_;         // Stub: return 0
-    uint32_t expertiseWeaponPenalty_;        // Stub: return 0
-    uint32_t expertisePenaltyBonus_;         // Stub: return 0
-    uint32_t weightPenalty_;                 // Stub: return 0
-    uint32_t curWeightPenalty_;              // Stub: return 0
-    uint32_t inventoryLimit_;                // Stub: return 0
-    uint32_t warehouseLimit_;                // Stub: return 0
-    uint32_t privateSellStoreLimit_;         // Stub: return 0
-    uint32_t privateBuyStoreLimit_;          // Stub: return 0
-    uint32_t dwarfRecipeLimit_;              // Stub: return 0
-    uint32_t commonRecipeLimit_;             // Stub: return 0
-    uint32_t questInventoryLimit_;           // Stub: return 0
-    uint32_t bookmarkslot_;                  // Stub: return 0
-    uint32_t language_;                      // Stub: return 0
-    uint32_t faction_;                       // Stub: return 0
-    uint32_t newbie_;                        // Stub: return 0
-    uint32_t nobless_;                       // Stub: return 0
-    uint32_t isIn7sDungeon_;                 // Stub: return 0
-    uint32_t clanPrivileges_;                // Stub: return 0
-    uint32_t subpledge_;                     // Stub: return 0
-    uint32_t titleColor_;                    // Stub: return 0
-    uint32_t title_;                         // Stub: return 0
-    uint32_t cancraft_;                      // Stub: return 0
-    uint32_t onlinetime_;                    // Stub: return 0
-    uint32_t isin7sdungeon_;                 // Stub: return 0
-    uint32_t last_recom_date_;               // Stub: return 0
-    uint32_t rec_have_;                      // Stub: return 0
-    uint32_t rec_left_;                      // Stub: return 0
-    uint32_t death_penalty_level_;           // Stub: return 0
-    uint32_t vitality_points_;               // Stub: return 0
-    uint32_t pccafe_points_;                 // Stub: return 0
+    std::vector<uint32_t> skills_;     // Stub: return empty vector
+    Clan *clan_;                       // Stub: return nullptr
+    Party *party_;                     // Stub: return nullptr
+    std::vector<Item *> inventory_;    // Stub: return empty vector
+    bool isOnline_;                    // Stub: return false
+    bool isInDuel_;                    // Stub: return false
+    bool isNoble_;                     // Stub: return false
+    bool isHero_;                      // Stub: return false
+    uint32_t accessLevel_;             // Stub: return 0
+    uint32_t mountNpcId_;              // Stub: return 0
+    uint32_t mountLevel_;              // Stub: return 0
+    uint32_t mountObjectId_;           // Stub: return 0
+    uint32_t agathionId_;              // Stub: return 0
+    uint32_t vitalityPoints_;          // Stub: return 0
+    uint32_t pcCafePoints_;            // Stub: return 0
+    uint32_t onlineTime_;              // Stub: return 0
+    uint32_t lastAccess_;              // Stub: return 0
+    uint32_t createDate_;              // Stub: return 0
+    uint32_t lastRecomUpdate_;         // Stub: return 0
+    uint32_t recomHave_;               // Stub: return 0
+    uint32_t recomLeft_;               // Stub: return 0
+    uint32_t deathPenaltyBuffLevel_;   // Stub: return 0
+    uint32_t charges_;                 // Stub: return 0
+    uint32_t powerGrade_;              // Stub: return 0
+    uint32_t pledgeClass_;             // Stub: return 0
+    uint32_t pledgeType_;              // Stub: return 0
+    uint32_t apprentice_;              // Stub: return 0
+    uint32_t sponsor_;                 // Stub: return 0
+    uint32_t clanJoinExpiryTime_;      // Stub: return 0
+    uint32_t clanCreateExpiryTime_;    // Stub: return 0
+    uint32_t lvlJoinedAcademy_;        // Stub: return 0
+    uint32_t wantsPeace_;              // Stub: return 0
+    uint32_t partyRoom_;               // Stub: return 0
+    uint32_t siegeState_;              // Stub: return 0
+    uint32_t siegeSide_;               // Stub: return 0
+    uint32_t olympiadGameId_;          // Stub: return 0
+    uint32_t olympiadSide_;            // Stub: return 0
+    uint32_t olympiadBuffCount_;       // Stub: return 0
+    uint32_t duelId_;                  // Stub: return 0
+    uint32_t duelState_;               // Stub: return 0
+    uint32_t pvpFlag_;                 // Stub: return 0
+    uint32_t pvpFlagLasts_;            // Stub: return 0
+    uint32_t teleMode_;                // Stub: return 0
+    uint32_t partyDistributionType_;   // Stub: return 0
+    uint32_t privateStoreType_;        // Stub: return 0
+    uint32_t dietMode_;                // Stub: return 0
+    uint32_t tradeRefusal_;            // Stub: return 0
+    uint32_t exchangeRefusal_;         // Stub: return 0
+    uint32_t messageRefusal_;          // Stub: return 0
+    uint32_t silenceMode_;             // Stub: return 0
+    uint32_t inventoryBlockingStatus_; // Stub: return 0
+    uint32_t expertiseArmorPenalty_;   // Stub: return 0
+    uint32_t expertiseWeaponPenalty_;  // Stub: return 0
+    uint32_t expertisePenaltyBonus_;   // Stub: return 0
+    uint32_t weightPenalty_;           // Stub: return 0
+    uint32_t curWeightPenalty_;        // Stub: return 0
+    uint32_t inventoryLimit_;          // Stub: return 0
+    uint32_t warehouseLimit_;          // Stub: return 0
+    uint32_t privateSellStoreLimit_;   // Stub: return 0
+    uint32_t privateBuyStoreLimit_;    // Stub: return 0
+    uint32_t dwarfRecipeLimit_;        // Stub: return 0
+    uint32_t commonRecipeLimit_;       // Stub: return 0
+    uint32_t questInventoryLimit_;     // Stub: return 0
+    uint32_t bookmarkslot_;            // Stub: return 0
+    uint32_t language_;                // Stub: return 0
+    uint32_t faction_;                 // Stub: return 0
+    uint32_t newbie_;                  // Stub: return 0
+    uint32_t nobless_;                 // Stub: return 0
+    uint32_t isIn7sDungeon_;           // Stub: return 0
+    uint32_t clanPrivileges_;          // Stub: return 0
+    uint32_t subpledge_;               // Stub: return 0
+    uint32_t titleColor_;              // Stub: return 0
+    uint32_t title_;                   // Stub: return 0
+    uint32_t cancraft_;                // Stub: return 0
+    uint32_t onlinetime_;              // Stub: return 0
+    uint32_t isin7sdungeon_;           // Stub: return 0
+    uint32_t last_recom_date_;         // Stub: return 0
+    uint32_t rec_have_;                // Stub: return 0
+    uint32_t rec_left_;                // Stub: return 0
+    uint32_t death_penalty_level_;     // Stub: return 0
+    uint32_t vitality_points_;         // Stub: return 0
+    uint32_t pccafe_points_;           // Stub: return 0
 
 public:
     // Constructors
-    Player(uint32_t objectId, const std::string& name, const std::string& accountName);
+    Player(uint32_t objectId, const std::string &name, const std::string &accountName);
     virtual ~Player() = default;
 
     // Core methods (implemented for character selection)
-    const std::string& getAccountName() const { return accountName_; }
+    const std::string &getAccountName() const { return accountName_; }
     uint32_t getSessionId() const { return sessionId_; }
     uint32_t getClanId() const { return clanId_; }
     uint32_t getRace() const { return race_; }
@@ -148,11 +146,11 @@ public:
     uint32_t getDeleteTimer() const { return deleteTimer_; }
     uint32_t getEnchantEffect() const { return enchantEffect_; }
     uint32_t getAugmentationId() const { return augmentationId_; }
-    
-    const std::vector<uint32_t>& getPaperdollObjectIds() const { return paperdollObjectIds_; }
-    const std::vector<uint32_t>& getPaperdollItemIds() const { return paperdollItemIds_; }
 
-    void setAccountName(const std::string& accountName) { accountName_ = accountName; }
+    const std::vector<uint32_t> &getPaperdollObjectIds() const { return paperdollObjectIds_; }
+    const std::vector<uint32_t> &getPaperdollItemIds() const { return paperdollItemIds_; }
+
+    void setAccountName(const std::string &accountName) { accountName_ = accountName; }
     void setSessionId(uint32_t sessionId) { sessionId_ = sessionId; }
     void setClanId(uint32_t clanId) { clanId_ = clanId; }
     void setRace(uint32_t race) { race_ = race; }
@@ -169,7 +167,7 @@ public:
     void setDeleteTimer(uint32_t deleteTimer) { deleteTimer_ = deleteTimer; }
     void setEnchantEffect(uint32_t enchantEffect) { enchantEffect_ = enchantEffect; }
     void setAugmentationId(uint32_t augmentationId) { augmentationId_ = augmentationId; }
-    
+
     void setPaperdollObjectId(size_t slot, uint32_t objectId);
     void setPaperdollItemId(size_t slot, uint32_t itemId);
 
@@ -177,10 +175,10 @@ public:
     void dump() const;
 
     // Stubbed methods (return defaults)
-    [[maybe_unused]] const std::vector<uint32_t>& getSkills() const { return skills_; }
-    [[maybe_unused]] Clan* getClan() const { return clan_; }
-    [[maybe_unused]] Party* getParty() const { return party_; }
-    [[maybe_unused]] const std::vector<Item*>& getInventory() const { return inventory_; }
+    [[maybe_unused]] const std::vector<uint32_t> &getSkills() const { return skills_; }
+    [[maybe_unused]] Clan *getClan() const { return clan_; }
+    [[maybe_unused]] Party *getParty() const { return party_; }
+    [[maybe_unused]] const std::vector<Item *> &getInventory() const { return inventory_; }
     [[maybe_unused]] bool isOnline() const { return isOnline_; }
     [[maybe_unused]] bool isInDuel() const { return isInDuel_; }
     [[maybe_unused]] bool isNoble() const { return isNoble_; }
@@ -249,7 +247,7 @@ public:
     [[maybe_unused]] uint32_t getClanPrivileges() const { return clanPrivileges_; }
     [[maybe_unused]] uint32_t getSubpledge() const { return subpledge_; }
     [[maybe_unused]] uint32_t getTitleColor() const { return titleColor_; }
-    [[maybe_unused]] uint32_t getTitle() const { return title_; }
+    [[maybe_unused]] uint32_t getTitleId() const { return title_; }
     [[maybe_unused]] uint32_t getCancraft() const { return cancraft_; }
     [[maybe_unused]] uint32_t getOnlinetime() const { return onlinetime_; }
     [[maybe_unused]] uint32_t getIsin7sdungeon() const { return isin7sdungeon_; }
@@ -259,11 +257,43 @@ public:
     [[maybe_unused]] uint32_t getDeathPenaltyLevel() const { return death_penalty_level_; }
     [[maybe_unused]] uint32_t getPccafePoints() const { return pccafe_points_; }
 
+    // Additional methods needed for CharInfo packet
+    bool isFemale() const { return sex_ == 1; }
+    uint32_t getBaseClass() const { return baseClassId_; }
+    uint32_t getMAtkSpd() const { return 500; } // Magic attack speed
+    uint32_t getPAtkSpd() const { return 500; } // Physical attack speed
+    double getMovementSpeedMultiplier() const { return 1.0; }
+    uint32_t getRunSpeed() const { return 120; }
+    uint32_t getWalkSpeed() const { return 50; }
+    uint32_t getSwimRunSpeed() const { return 50; }
+    uint32_t getSwimWalkSpeed() const { return 20; }
+    bool isFlying() const { return false; }
+    double getAttackSpeedMultiplier() const { return 1.0; }
+    double getCollisionRadius() const { return 9.0; }
+    double getCollisionHeight() const { return 16.0; }
+    std::string getTitle() const { return ""; }
+    uint32_t getAllyId() const { return 0; }
+    uint32_t getClanCrestId() const { return 0; }
+    uint32_t getAllyCrestId() const { return 0; }
+    bool isSitting() const { return false; }
+    bool isRunning() const { return true; }
+    bool isInCombat() const { return false; }
+    bool isAlikeDead() const { return false; }
+    bool isInvisible() const { return false; }
+    uint32_t getAbnormalVisualEffects() const { return 0; }
+    uint32_t getPlayerClass() const { return classId_; }
+    uint32_t getClanCrestLargeId() const { return 0; }
+    bool isFishing() const { return false; }
+    uint32_t getFishX() const { return 0; }
+    uint32_t getFishY() const { return 0; }
+    uint32_t getFishZ() const { return 0; }
+    uint32_t getNameColor() const { return 0xFFFFFF; }
+
     // Stubbed setters
-    [[maybe_unused]] void setSkills(const std::vector<uint32_t>& skills) { skills_ = skills; }
-    [[maybe_unused]] void setClan(Clan* clan) { clan_ = clan; }
-    [[maybe_unused]] void setParty(Party* party) { party_ = party; }
-    [[maybe_unused]] void setInventory(const std::vector<Item*>& inventory) { inventory_ = inventory; }
+    [[maybe_unused]] void setSkills(const std::vector<uint32_t> &skills) { skills_ = skills; }
+    [[maybe_unused]] void setClan(Clan *clan) { clan_ = clan; }
+    [[maybe_unused]] void setParty(Party *party) { party_ = party; }
+    [[maybe_unused]] void setInventory(const std::vector<Item *> &inventory) { inventory_ = inventory; }
     [[maybe_unused]] void setOnline(bool online) { isOnline_ = online; }
     [[maybe_unused]] void setInDuel(bool inDuel) { isInDuel_ = inDuel; }
     [[maybe_unused]] void setNoble(bool noble) { isNoble_ = noble; }
@@ -332,7 +362,7 @@ public:
     [[maybe_unused]] void setClanPrivileges(uint32_t clanPrivileges) { clanPrivileges_ = clanPrivileges; }
     [[maybe_unused]] void setSubpledge(uint32_t subpledge) { subpledge_ = subpledge; }
     [[maybe_unused]] void setTitleColor(uint32_t titleColor) { titleColor_ = titleColor; }
-    [[maybe_unused]] void setTitle(uint32_t title) { title_ = title; }
+    [[maybe_unused]] void setTitleId(uint32_t title) { title_ = title; }
     [[maybe_unused]] void setCancraft(uint32_t cancraft) { cancraft_ = cancraft; }
     [[maybe_unused]] void setOnlinetime(uint32_t onlinetime) { onlinetime_ = onlinetime; }
     [[maybe_unused]] void setIsin7sdungeon(uint32_t isin7sdungeon) { isin7sdungeon_ = isin7sdungeon; }
@@ -341,4 +371,4 @@ public:
     [[maybe_unused]] void setRecLeft(uint32_t recLeft) { rec_left_ = recLeft; }
     [[maybe_unused]] void setDeathPenaltyLevel(uint32_t deathPenaltyLevel) { death_penalty_level_ = deathPenaltyLevel; }
     [[maybe_unused]] void setPccafePoints(uint32_t pccafePoints) { pccafe_points_ = pccafePoints; }
-}; 
+};

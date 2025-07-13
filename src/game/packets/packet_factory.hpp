@@ -17,8 +17,12 @@
 #include "requests/extended/check_char_name_packet.hpp"
 #include "requests/extended/send_client_ini_packet.hpp"
 #include "requests/extended/request_user_ban_info_packet.hpp"
+#include "requests/extended/request_manor_list.hpp"
 #include "requests/request_skill_cool_time.hpp"
 #include "requests/request_answer_join_pledge.hpp"
+#include "requests/request_item_list.hpp"
+#include "requests/request_show_mini_map.hpp"
+#include "responses/char_info.hpp"
 
 #include <memory>
 #include <vector>
@@ -40,8 +44,10 @@ enum class GameClientPacketType : uint8_t
     RequestCharacterDelete = 0x0C,  // Character deletion
     RequestGameStart = 0x0D,        // Game start (character selection)
     RequestNewCharacter = 0x0E,     // New character info request
+    RequestItemList = 0x0F,         // Request inventory item list
     RequestAnswerJoinPledge = 0x25, // Answer pledge join request
     RequestSkillCoolTime = 0x9D,    // Request skill cooldown info
+    RequestShowMiniMap = 0xCD,      // Request show minimap
     
     // Extended packets (0xD0 + sub-opcode)
     ExtendedPacket = 0xD0
@@ -50,6 +56,7 @@ enum class GameClientPacketType : uint8_t
 // Extended packet sub-opcodes (16-bit values after 0xD0)
 enum class ExtendedGamePacketType : uint16_t
 {
+    RequestManorList = 0x0008,
     GoLobby = 0x001B,
     CheckCharName = 0x008F,
     SendClientIni = 0x00CD,
@@ -85,11 +92,14 @@ private:
     static std::unique_ptr<ReadablePacket> createRequestGameStartPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createSelectCharPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createEnterWorldPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestItemListPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestAnswerJoinPledgePacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestSkillCoolTimePacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestShowMiniMapPacket(const std::vector<uint8_t> &rawData);
 
     // Create extended packet types (NEW - game server complexity)
     static std::unique_ptr<ReadablePacket> createExtendedPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createRequestManorListPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createGoLobbyPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createCheckCharNamePacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createSendClientIniPacket(const std::vector<uint8_t> &rawData);

@@ -128,6 +128,9 @@ add_executable(L2GameServer
     src/game/packets/requests/no_op_packet.cpp
     src/game/packets/requests/request_skill_cool_time.cpp
     src/game/packets/requests/request_answer_join_pledge.cpp
+    src/game/packets/requests/request_item_list.cpp
+    src/game/packets/requests/request_show_mini_map.cpp
+    src/game/packets/requests/extended/request_manor_list.cpp
     
     # Game response packets
     src/game/packets/responses/ping_response.cpp
@@ -152,10 +155,15 @@ add_executable(L2GameServer
     src/game/packets/responses/pledge_status_changed.cpp
     src/game/packets/responses/ask_join_pledge.cpp
     src/game/packets/responses/npc_html_message.cpp
+    src/game/packets/responses/ex_send_manor_list.cpp
+    src/game/packets/responses/skill_list.cpp
+    src/game/packets/responses/status_update.cpp
+    src/game/packets/responses/char_info.cpp
     # Phase 4: Welcome/System packets
     src/game/packets/responses/system_message.cpp
     src/game/packets/responses/ex_show_screen_message.cpp
     src/game/packets/responses/action_failed.cpp
+    src/game/packets/responses/show_mini_map.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

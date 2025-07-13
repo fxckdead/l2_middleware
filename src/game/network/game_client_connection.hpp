@@ -6,10 +6,12 @@
 #include "../packets/requests/no_op_packet.hpp"
 #include "../packets/requests/request_skill_cool_time.hpp"
 #include "../packets/requests/request_answer_join_pledge.hpp"
+#include "../packets/requests/extended/request_manor_list.hpp"
 #include "../packets/responses/skill_cool_time.hpp"
 #include "../packets/responses/ask_join_pledge.hpp"
 #include "../packets/responses/system_message.hpp"
 #include "../packets/responses/npc_html_message.hpp"
+#include "../packets/responses/ex_send_manor_list.hpp"
 
 // Forward declarations
 class GameConnectionManager;
@@ -98,6 +100,9 @@ private:
     void handle_enter_world_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_skill_cool_time_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_answer_join_pledge_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_item_list_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_manor_list_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_request_show_mini_map_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;
