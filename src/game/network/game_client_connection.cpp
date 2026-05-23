@@ -43,6 +43,7 @@
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
 #include "../packets/requests/move_backward_to_location_packet.hpp"
+#include "../packets/requests/validate_position_packet.hpp"
 #include "../entities/player.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
@@ -287,6 +288,9 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             break;
         case 0x25: // RequestAnswerJoinPledge
             handle_request_answer_join_pledge_packet(packet);
+            break;
+        case 0x48: // ValidatePosition - client position update for reconciliation
+            handle_validate_position_packet(packet);
             break;
         case 0x9D: // RequestSkillCoolTime
             handle_request_skill_cool_time_packet(packet);
@@ -1062,4 +1066,44 @@ const char *game_state_to_string(GameClientConnection::GameState state)
     default:
         return "UNKNOWN";
     }
+}
+
+void GameClientConnection::handle_validate_position_packet(
+    const std::unique_ptr<ReadablePacket>& packet)
+{
+    if (get_game_state() != GameState::IN_GAME) {
+        return; // silent - these packets are noisy
+    }
+
+    auto *vp = dynamic_cast<ValidatePositionPacket*>(packet.get());
+    if (!vp) return;
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) return;
+    auto info = db->getCharacterById(character_id_);
+    if (!info) return;
+    Player *player = *info;
+
+    const int32_t cx = vp->getX();
+    const int32_t cy = vp->getY();
+    const int32_t cz = vp->getZ();
+    const int32_t ch = vp->getHeading();
+
+    const int64_t dx = static_cast<int64_t>(cx) - static_cast<int64_t>(player->getX());
+    const int64_t dy = static_cast<int64_t>(cy) - static_cast<int64_t>(player->getY());
+    const int64_t delta2 = dx*dx + dy*dy;
+
+    // Mobius threshold: 360000 = 600*600. Above this we don't trust the client.
+    if (delta2 < 360000LL) {
+        player->setPosition(cx, cy, cz);
+        player->setHeading(ch);
+    } else {
+        // Snap client back to server-authoritative pos.
+        send_packet(std::make_unique<ValidateLocation>(player));
+        log_connection_event("ValidatePosition delta too large - sent ValidateLocation");
+    }
+
+    // Always update client-mirror.
+    player->setClientPosition(cx, cy, cz);
+    player->setClientHeading(ch);
 }

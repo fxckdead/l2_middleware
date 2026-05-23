@@ -104,6 +104,7 @@ private:
     void handle_request_manor_list_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_request_show_mini_map_packet(const std::unique_ptr<ReadablePacket>& packet);
     void handle_move_backward_to_location_packet(const std::unique_ptr<ReadablePacket>& packet);
+    void handle_validate_position_packet(const std::unique_ptr<ReadablePacket>& packet);
 
     // Game-specific disconnect handling
     void on_disconnect() override;
