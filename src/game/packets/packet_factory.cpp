@@ -39,7 +39,7 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
 
     case GameClientPacketType::MoveBackwardToLocation:
         // 0x01 - Movement packet
-        return createNoOpPacket(packetData);
+        return createMoveBackwardToLocationPacket(packetData);
 
     case GameClientPacketType::Say2:
         // 0x38 - Chat packet (Say2)
@@ -88,6 +88,10 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
     case GameClientPacketType::RequestAnswerJoinPledge:
         // 0x25 - Answer pledge join request
         return createRequestAnswerJoinPledgePacket(packetData);
+
+    case GameClientPacketType::ValidatePosition:
+        // 0x48 - Client position update for reconciliation
+        return createValidatePositionPacket(packetData);
 
     case GameClientPacketType::RequestSkillCoolTime:
         // 0x9D - Request skill cooldown info
@@ -388,5 +392,37 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestShowMiniMapPacke
     catch (const std::exception &e)
     {
         throw PacketException("Failed to create RequestShowMiniMap packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createMoveBackwardToLocationPacket(
+    const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<MoveBackwardToLocationPacket>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create MoveBackwardToLocation packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createValidatePositionPacket(
+    const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<ValidatePositionPacket>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create ValidatePosition packet: " + std::string(e.what()));
     }
 }
