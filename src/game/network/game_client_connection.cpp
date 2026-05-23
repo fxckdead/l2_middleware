@@ -1006,9 +1006,10 @@ void GameClientConnection::handle_move_backward_to_location_packet(
         send_packet(std::make_unique<ActionFailed>());
         return;
     }
-    auto info = db->getCharacterById(character_id_);
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
     if (!info) {
-        log_connection_event("MoveBackwardToLocation: no character " + std::to_string(character_id_));
+        log_connection_event("MoveBackwardToLocation: no character at slot " + std::to_string(character_id_)
+                             + " for account " + player_name_);
         send_packet(std::make_unique<ActionFailed>());
         return;
     }
@@ -1080,7 +1081,7 @@ void GameClientConnection::handle_validate_position_packet(
 
     auto *db = getCharacterDatabaseManager();
     if (!db) return;
-    auto info = db->getCharacterById(character_id_);
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
     if (!info) return;
     Player *player = *info;
 
@@ -1111,11 +1112,12 @@ void GameClientConnection::handle_validate_position_packet(
 void GameClientConnection::advance_player_movement(int64_t nowMs)
 {
     if (get_game_state() != GameState::IN_GAME) return;
-    if (character_id_ == 0) return;
 
     auto *db = getCharacterDatabaseManager();
     if (!db) return;
-    auto info = db->getCharacterById(character_id_);
+    // character_id_ is a slot index (0..6) per the existing codebase convention,
+    // matching set_character_id() in handle_request_game_start_packet.
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
     if (!info) return;
 
     Player *player = *info;
