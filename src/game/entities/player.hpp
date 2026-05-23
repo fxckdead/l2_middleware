@@ -39,6 +39,21 @@ private:
     std::vector<uint32_t> paperdollObjectIds_;
     std::vector<uint32_t> paperdollItemIds_;
 
+    // --- Movement (Player Movement plan: 2026-05-22) ---
+    // Authoritative destination set by MoveBackwardToLocation; consumed by world tick.
+    int32_t xDst_ = 0;
+    int32_t yDst_ = 0;
+    int32_t zDst_ = 0;
+    bool isMoving_ = false;
+    int64_t lastMoveTickMs_ = 0;
+
+    // Mirror of what the client thinks. Updated by ValidatePosition.
+    // Stored now so future code (combat, casting) can ask cheaply.
+    int32_t clientX_ = 0;
+    int32_t clientY_ = 0;
+    int32_t clientZ_ = 0;
+    int32_t clientHeading_ = 0;
+
     // Stubbed properties (return defaults)
     std::vector<uint32_t> skills_;     // Stub: return empty vector
     Clan *clan_;                       // Stub: return nullptr
@@ -170,6 +185,30 @@ public:
 
     void setPaperdollObjectId(size_t slot, uint32_t objectId);
     void setPaperdollItemId(size_t slot, uint32_t itemId);
+
+    // --- Movement (Player Movement plan: 2026-05-22) ---
+    int32_t getDestX() const { return xDst_; }
+    int32_t getDestY() const { return yDst_; }
+    int32_t getDestZ() const { return zDst_; }
+    bool isMoving() const { return isMoving_; }
+    int64_t getLastMoveTickMs() const { return lastMoveTickMs_; }
+
+    int32_t getClientX() const { return clientX_; }
+    int32_t getClientY() const { return clientY_; }
+    int32_t getClientZ() const { return clientZ_; }
+    int32_t getClientHeading() const { return clientHeading_; }
+
+    void setClientPosition(int32_t x, int32_t y, int32_t z);
+    void setClientHeading(int32_t heading);
+
+    // Begin moving toward (x,y,z). Recomputes heading from current position.
+    void setMoveDestination(int32_t x, int32_t y, int32_t z, int64_t nowMs);
+
+    // Clear isMoving_; leaves x_,y_,z_ where they are.
+    void stopMove();
+
+    // Advance x_,y_,z_ toward dest using runSpeed * dt. Snaps + stops within 16 units.
+    void advanceMovement(int64_t nowMs);
 
     // Debug method
     void dump() const;
