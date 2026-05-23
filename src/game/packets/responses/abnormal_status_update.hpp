@@ -21,7 +21,7 @@ public:
     };
 
 private:
-    static constexpr uint8_t PACKET_ID = 0x85; // AbnormalStatusUpdate - Interlude Update 3
+    static constexpr uint8_t PACKET_ID = 0x7F; // AbnormalStatusUpdate - Interlude (Mobius ServerPackets.ABNORMAL_STATUS_UPDATE)
     const Player* player_;
     std::vector<AbnormalEffect> effects_;
 

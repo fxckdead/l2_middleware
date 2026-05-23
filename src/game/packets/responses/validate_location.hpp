@@ -10,7 +10,7 @@
 class ValidateLocation : public SendablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0x79; // ValidateLocation - Interlude Update 3
+    static constexpr uint8_t PACKET_ID = 0x61; // ValidateLocation - Interlude (Mobius ServerPackets.VALIDATE_LOCATION)
     const Player* player_;
 
 public:

@@ -10,7 +10,7 @@
 class PingResponse : public SendablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0x00; // Same as ping packet
+    static constexpr uint8_t PACKET_ID = 0xD3; // NetPing - Interlude (Mobius ServerPackets.NET_PING)
 
     std::vector<uint8_t> ping_data_;
 

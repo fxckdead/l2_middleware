@@ -13,10 +13,6 @@
 #include "requests/select_char_packet.hpp"
 #include "requests/enter_world_packet.hpp"
 #include "requests/no_op_packet.hpp"
-#include "requests/extended/go_lobby_packet.hpp"
-#include "requests/extended/check_char_name_packet.hpp"
-#include "requests/extended/send_client_ini_packet.hpp"
-#include "requests/extended/request_user_ban_info_packet.hpp"
 #include "requests/extended/request_manor_list.hpp"
 #include "requests/request_skill_cool_time.hpp"
 #include "requests/request_answer_join_pledge.hpp"
@@ -34,7 +30,7 @@ enum class GameClientPacketType : uint8_t
 {
     SendProtocolVersion = 0x00,     // Client protocol version announcement
     MoveBackwardToLocation = 0x01,  // Movement packet
-    Say = 0x02,                     // Chat packet
+    Say2 = 0x38,                    // Chat packet (Mobius ClientPackets.SAY2)
     RequestEnterWorld = 0x03,       // Enter world request
     Action = 0x04,                  // Action packet (attack, pickup, etc)
     RequestLogin = 0x08,            // Login authentication  
@@ -56,11 +52,7 @@ enum class GameClientPacketType : uint8_t
 // Extended packet sub-opcodes (16-bit values after 0xD0)
 enum class ExtendedGamePacketType : uint16_t
 {
-    RequestManorList = 0x0008,
-    GoLobby = 0x001B,
-    CheckCharName = 0x008F,
-    SendClientIni = 0x00CD,
-    RequestUserBanInfo = 0x00CF
+    RequestManorList = 0x0008
 };
 
 // Game Packet Factory - matches Login PacketFactory pattern
@@ -100,8 +92,4 @@ private:
     // Create extended packet types (NEW - game server complexity)
     static std::unique_ptr<ReadablePacket> createExtendedPacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestManorListPacket(const std::vector<uint8_t> &rawData);
-    static std::unique_ptr<ReadablePacket> createGoLobbyPacket(const std::vector<uint8_t> &rawData);
-    static std::unique_ptr<ReadablePacket> createCheckCharNamePacket(const std::vector<uint8_t> &rawData);
-    static std::unique_ptr<ReadablePacket> createSendClientIniPacket(const std::vector<uint8_t> &rawData);
-    static std::unique_ptr<ReadablePacket> createRequestUserBanInfoPacket(const std::vector<uint8_t> &rawData);
 };

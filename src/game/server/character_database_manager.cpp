@@ -287,6 +287,7 @@ std::unique_ptr<Player> CharacterDatabaseManager::createDefaultPlayer(const std:
 
     // Default starting position (safer coordinates for all races)
     player->setPosition(-84318, 244579, -3730);
+    player->setHeading(48969);
 
     // Default starting stats - Set proper starting HP/MP based on class/race
     player->setLevel(1);

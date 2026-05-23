@@ -33,6 +33,12 @@
 #include "../packets/responses/status_update.hpp"
 #include "../packets/responses/char_info.hpp"
 #include "../packets/responses/show_mini_map.hpp"
+#include "../packets/responses/send_macro_list.hpp"
+#include "../packets/responses/move_to_location.hpp"
+#include "../packets/responses/ex_set_compass_zone_code.hpp"
+#include "../packets/responses/creature_say.hpp"
+#include "../packets/responses/npc_info.hpp"
+#include "../packets/responses/abnormal_status_update.hpp"
 
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
@@ -225,11 +231,14 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
 
     try
     {
-        // Log packet processing
+        // Log packet processing with enhanced details
         char hex_opcode[8];
         snprintf(hex_opcode, sizeof(hex_opcode), "0x%02X", actual_opcode);
-        log_connection_event("Processing packet " + std::string(hex_opcode) +
-                             " in state: " + std::string(game_state_to_string(game_state_.load())));
+        log_connection_event("=== PROCESSING PACKET " + std::string(hex_opcode) +
+                             " in state: " + std::string(game_state_to_string(game_state_.load())) + " ===");
+        
+        // Log packet size and timing for debugging loading screen hang
+        log_connection_event("Packet size: " + std::to_string(raw_packet_data.size()) + " bytes");
 
         // Handle Interlude Update 3 packets based on correct opcodes
         switch (actual_opcode)
@@ -240,8 +249,8 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         case 0x01: // MoveBackwardToLocation
             log_connection_event("MoveBackwardToLocation packet received");
             break;
-        case 0x02: // Say (chat)
-            log_connection_event("Say packet received");
+        case 0x38: // Say2 (chat)
+            log_connection_event("Say2 packet received");
             break;
         case 0x03: // RequestEnterWorld
             handle_enter_world_packet(packet);
@@ -292,8 +301,20 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
         default:
             char hex_unknown[8];
             snprintf(hex_unknown, sizeof(hex_unknown), "0x%02X", actual_opcode);
-            log_connection_event("Received unknown packet opcode: " + std::string(hex_unknown));
-            log_connection_event("WARNING: Unknown packet may require response - client could be waiting");
+            log_connection_event("*** UNKNOWN PACKET OPCODE: " + std::string(hex_unknown) + " ***");
+            log_connection_event("*** CRITICAL: Client may be waiting for response - THIS COULD CAUSE LOADING SCREEN HANG ***");
+            log_connection_event("Packet data size: " + std::to_string(raw_packet_data.size()) + " bytes");
+            
+            // Log first few bytes of unknown packet for debugging
+            if (raw_packet_data.size() > 0) {
+                std::string hex_data = "";
+                for (size_t i = 0; i < std::min(raw_packet_data.size(), size_t(16)); ++i) {
+                    char hex_byte[4];
+                    snprintf(hex_byte, sizeof(hex_byte), "%02X ", raw_packet_data[i]);
+                    hex_data += hex_byte;
+                }
+                log_connection_event("First 16 bytes: " + hex_data);
+            }
             break;
         }
     }
@@ -649,122 +670,49 @@ void GameClientConnection::handle_enter_world_packet(const std::unique_ptr<Reada
             return;
         }
 
-        log_connection_event("Sending spawn packets for character: " + (*character_info)->getName());
+        log_connection_event("*** STARTING ENTER WORLD SEQUENCE FOR: " + (*character_info)->getName() + " ***");
+        log_connection_event("*** EXPECTED CLIENT BEHAVIOR: Loading screen should disappear after ActionFailed packet ***");
 
-        // Send essential response packets for player spawning (Phase 1)
-        
-        // 1. UserInfo - Player stats, gear, location
-        auto user_info_response = std::make_unique<UserInfo>(*character_info);
-        send_packet(std::move(user_info_response));
-        log_connection_event("UserInfo packet sent");
+        // EnterWorld spawn sequence, ported from L2J Mobius EnterWorld.java (Interlude).
+        // World-dependent packets (CharInfo/NpcInfo via spawnMe, zone packets) are
+        // intentionally omitted until a world system exists - the client clears the
+        // loading screen on the final ActionFailed regardless.
+        const Player *player = *character_info;
 
-        // 2. CharInfo - Character object info for world visibility
-        auto char_info_response = std::make_unique<CharInfo>(*character_info);
-        send_packet(std::move(char_info_response));
-        log_connection_event("CharInfo packet sent");
+        // Welcome system message id 34 = WELCOME_TO_THE_WORLD_OF_LINEAGE_II
+        static constexpr int32_t SM_WELCOME_TO_LINEAGE_II = 34;
 
-        // 3. SkillList - Player skills
-        auto skill_list_response = std::make_unique<SkillList>(*character_info);
-        send_packet(std::move(skill_list_response));
-        log_connection_event("SkillList packet sent");
+        struct NamedPacket
+        {
+            const char *name;
+            std::unique_ptr<SendablePacket> packet;
+        };
 
-        // 4. StatusUpdate - HP/MP/CP status
-        auto status_update_response = std::make_unique<StatusUpdate>(*character_info);
-        send_packet(std::move(status_update_response));
-        log_connection_event("StatusUpdate packet sent");
+        std::array<NamedPacket, 15> spawn_sequence{{
+            {"UserInfo", std::make_unique<UserInfo>(player)},                                 // EnterWorld.java:167
+            {"SendMacroList", std::make_unique<SendMacroList>(1)},                             // EnterWorld.java:353
+            {"ItemList", std::make_unique<ItemList>(player, false)},                           // EnterWorld.java:356
+            {"ShortcutInit", std::make_unique<ShortcutInit>(player)},                          // EnterWorld.java:359
+            {"HennaInfo", std::make_unique<HennaInfo>(player)},                                // EnterWorld.java:362
+            {"QuestList", std::make_unique<QuestList>(player)},                                // EnterWorld.java:392
+            {"EtcStatusUpdate", std::make_unique<EtcStatusUpdate>(player)},                    // EnterWorld.java:408
+            {"ExStorageMaxCount", std::make_unique<ExStorageMaxCount>(player)},                // EnterWorld.java:411
+            {"FriendList", std::make_unique<FriendList>(player)},                              // EnterWorld.java:412
+            {"SystemMessage(Welcome)", std::make_unique<SystemMessage>(SM_WELCOME_TO_LINEAGE_II)}, // EnterWorld.java:424
+            {"SkillList", std::make_unique<SkillList>(player)},                                // EnterWorld.java:464
+            {"SkillCoolTime", std::make_unique<SkillCoolTime>(player)},                        // EnterWorld.java:466
+            {"UserInfo(broadcast)", std::make_unique<UserInfo>(player)},                       // EnterWorld.java:559
+            {"ValidateLocation", std::make_unique<ValidateLocation>(player)},                  // EnterWorld.java:562
+            {"ActionFailed", std::make_unique<ActionFailed>()},                                // EnterWorld.java:565
+        }};
 
-        // 5. ValidateLocation - Resync position
-        auto validate_location_response = std::make_unique<ValidateLocation>(*character_info);
-        send_packet(std::move(validate_location_response));
-        log_connection_event("ValidateLocation packet sent");
+        for (auto &entry : spawn_sequence)
+        {
+            log_connection_event(std::string("Sending ") + entry.name);
+            send_packet(std::move(entry.packet));
+        }
 
-        // 6. ItemList - Inventory
-        auto item_list_response = std::make_unique<ItemList>(*character_info, false);
-        send_packet(std::move(item_list_response));
-        log_connection_event("ItemList packet sent");
-
-        // 7. SkillCoolTime - Cooldowns
-        auto skill_cool_time_response = std::make_unique<SkillCoolTime>(*character_info);
-        send_packet(std::move(skill_cool_time_response));
-        log_connection_event("SkillCoolTime packet sent");
-
-        // Phase 2: Basic UI Packets
-        
-        // 8. ShortcutInit - Skill/item shortcuts
-        auto shortcut_init_response = std::make_unique<ShortcutInit>(*character_info);
-        send_packet(std::move(shortcut_init_response));
-        log_connection_event("ShortcutInit packet sent");
-
-        // 9. EtcStatusUpdate - Status icons (weight, soulshots, etc.)
-        auto etc_status_response = std::make_unique<EtcStatusUpdate>(*character_info);
-        send_packet(std::move(etc_status_response));
-        log_connection_event("EtcStatusUpdate packet sent");
-
-        // 10. ExStorageMaxCount - Inventory/warehouse limits
-        auto storage_max_response = std::make_unique<ExStorageMaxCount>(*character_info);
-        send_packet(std::move(storage_max_response));
-        log_connection_event("ExStorageMaxCount packet sent");
-
-        // 11. QuestList - Active quests (empty for now)
-        auto quest_list_response = std::make_unique<QuestList>(*character_info);
-        send_packet(std::move(quest_list_response));
-        log_connection_event("QuestList packet sent");
-
-        // Send Phase 3: Social/Clan Packets
-        
-        // 9. HennaInfo - Active henna (dye) information
-        auto henna_info_response = std::make_unique<HennaInfo>(*character_info);
-        send_packet(std::move(henna_info_response));
-        log_connection_event("HennaInfo packet sent");
-
-        // 10. PledgeSkillList - Clan skills (extended packet)
-        auto pledge_skill_list_response = std::make_unique<PledgeSkillList>(*character_info);
-        send_packet(std::move(pledge_skill_list_response));
-        log_connection_event("PledgeSkillList packet sent");
-
-        // 11. FriendList - Friend list information
-        auto friend_list_response = std::make_unique<FriendList>(*character_info);
-        send_packet(std::move(friend_list_response));
-        log_connection_event("FriendList packet sent");
-
-        // 12. PledgeShowMemberListAll - Clan member list
-        auto pledge_member_list_response = std::make_unique<PledgeShowMemberListAll>(*character_info);
-        send_packet(std::move(pledge_member_list_response));
-        log_connection_event("PledgeShowMemberListAll packet sent");
-
-        // 13. PledgeStatusChanged - Clan status updates
-        auto pledge_status_response = std::make_unique<PledgeStatusChanged>(*character_info);
-        send_packet(std::move(pledge_status_response));
-        log_connection_event("PledgeStatusChanged packet sent");
-
-        // Send Phase 4: Welcome/System Packets
-        
-        // 14. SystemMessage - Welcome message
-        auto system_message_response = std::make_unique<SystemMessage>("Welcome to the server!");
-        send_packet(std::move(system_message_response));
-        log_connection_event("SystemMessage packet sent");
-
-        // 15. ExShowScreenMessage - Welcome popup
-        auto screen_message_response = std::make_unique<ExShowScreenMessage>("Welcome to Lineage 2!", 5, 5000);
-        send_packet(std::move(screen_message_response));
-        log_connection_event("ExShowScreenMessage packet sent");
-
-        // 16. NpcHtmlMessage - Welcome message
-        auto html_message = std::make_unique<NpcHtmlMessage>(0, "<html><body>Hola Mundo! Welcome to our Lineage 2 server!</body></html>");
-        send_packet(std::move(html_message));
-        log_connection_event("NpcHtmlMessage packet sent");
-
-        log_connection_event("Player successfully spawned in world");
-        
-        // Send final sequence matching L2J Mobius
-        auto final_validate_location = std::make_unique<ValidateLocation>(*character_info);
-        send_packet(std::move(final_validate_location));
-        log_connection_event("Final ValidateLocation sent");
-
-        // ActionFailed must be the absolute LAST packet
-        auto final_action_failed = std::make_unique<ActionFailed>();
-        send_packet(std::move(final_action_failed));
-        log_connection_event("ActionFailed sent - spawn sequence complete");
+        log_connection_event("*** ENTER WORLD SEQUENCE COMPLETE - ActionFailed sent, client should leave loading screen ***");
 
     }
     catch (const std::exception &e)
@@ -865,31 +813,48 @@ void GameClientConnection::handle_request_skill_cool_time_packet(const std::uniq
 {
     try
     {
-        log_connection_event("RequestSkillCoolTime packet received");
+        log_connection_event("*** RequestSkillCoolTime packet received - CLIENT REQUESTING COOLDOWN INFO ***");
 
         // Get character info from database
         auto *db_manager = getCharacterDatabaseManager();
         if (!db_manager)
         {
-            log_connection_event("No database manager available for skill cooldown request");
+            log_connection_event("ERROR: No database manager available for skill cooldown request");
             return;
         }
 
         auto character_info = db_manager->getCharacterBySlot(player_name_, character_id_);
         if (!character_info)
         {
-            log_connection_event("No character info available for skill cooldown request");
+            log_connection_event("ERROR: No character info available for skill cooldown request");
             return;
         }
 
         // Send SkillCoolTime response with current cooldown information
         auto skill_cool_time_response = std::make_unique<SkillCoolTime>(*character_info);
         send_packet(std::move(skill_cool_time_response));
-        log_connection_event("SkillCoolTime response sent");
+        log_connection_event("*** SkillCoolTime response sent - CLIENT SHOULD RECEIVE COOLDOWN DATA ***");
+
+        // CRITICAL: Send AbnormalStatusUpdate and SkillList after first RequestSkillCoolTime
+        // This matches the L2J Mobius sequence exactly
+        static bool first_skill_cooltime_request = true;
+        if (first_skill_cooltime_request) {
+            first_skill_cooltime_request = false;
+            
+            // Send AbnormalStatusUpdate (status effects)
+            auto abnormal_status_response = std::make_unique<AbnormalStatusUpdate>(*character_info);
+            send_packet(std::move(abnormal_status_response));
+            log_connection_event("*** AbnormalStatusUpdate sent - CRITICAL FOR LOADING SCREEN ***");
+            
+            // Send SkillList (full skill list)
+            auto skill_list_response = std::make_unique<SkillList>(*character_info);
+            send_packet(std::move(skill_list_response));
+            log_connection_event("*** SkillList sent - FINAL PACKET FOR LOADING SCREEN ***");
+        }
     }
     catch (const std::exception &e)
     {
-        log_connection_event("Error handling RequestSkillCoolTime packet: " + std::string(e.what()));
+        log_connection_event("ERROR handling RequestSkillCoolTime packet: " + std::string(e.what()));
     }
 }
 

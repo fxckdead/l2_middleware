@@ -11,7 +11,7 @@
 class SkillCoolTime : public SendablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0xC7; // SkillCoolTime - Interlude Update 3
+    static constexpr uint8_t PACKET_ID = 0xC1; // SkillCoolTime - Interlude (Mobius ServerPackets.SKILL_COOL_TIME)
     const Player* player_;
 
 public:

@@ -41,8 +41,8 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
         // 0x01 - Movement packet
         return createNoOpPacket(packetData);
 
-    case GameClientPacketType::Say:
-        // 0x02 - Chat packet
+    case GameClientPacketType::Say2:
+        // 0x38 - Chat packet (Say2)
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestEnterWorld:
@@ -299,18 +299,6 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createExtendedPacket(const st
     case ExtendedGamePacketType::RequestManorList:
         return createRequestManorListPacket(extPacketData);
 
-    case ExtendedGamePacketType::GoLobby:
-        return createGoLobbyPacket(extPacketData);
-
-    case ExtendedGamePacketType::CheckCharName:
-        return createCheckCharNamePacket(extPacketData);
-
-    case ExtendedGamePacketType::SendClientIni:
-        return createSendClientIniPacket(extPacketData);
-
-    case ExtendedGamePacketType::RequestUserBanInfo:
-        return createRequestUserBanInfoPacket(extPacketData);
-
     default:
         std::cout << "[ExtendedPacket] Unknown sub-opcode: 0x" << std::hex << sub_opcode 
                   << " (decimal: " << std::dec << sub_opcode << ")" << std::endl;
@@ -340,70 +328,6 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestManorListPacket(
     catch (const std::exception &e)
     {
         throw PacketException("Failed to create RequestManorList packet: " + std::string(e.what()));
-    }
-}
-
-std::unique_ptr<ReadablePacket> GamePacketFactory::createGoLobbyPacket(const std::vector<uint8_t> &rawData)
-{
-    // TODO: Create GoLobbyPacket class - using NoOpPacket for now
-    try
-    {
-        ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
-        packet->read(buffer);
-        return packet;
-    }
-    catch (const std::exception &e)
-    {
-        throw PacketException("Failed to create GoLobby packet: " + std::string(e.what()));
-    }
-}
-
-std::unique_ptr<ReadablePacket> GamePacketFactory::createCheckCharNamePacket(const std::vector<uint8_t> &rawData)
-{
-    // TODO: Create CheckCharNamePacket class - using NoOpPacket for now
-    try
-    {
-        ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
-        packet->read(buffer);
-        return packet;
-    }
-    catch (const std::exception &e)
-    {
-        throw PacketException("Failed to create CheckCharName packet: " + std::string(e.what()));
-    }
-}
-
-std::unique_ptr<ReadablePacket> GamePacketFactory::createSendClientIniPacket(const std::vector<uint8_t> &rawData)
-{
-    // TODO: Create SendClientIniPacket class - using NoOpPacket for now
-    try
-    {
-        ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
-        packet->read(buffer);
-        return packet;
-    }
-    catch (const std::exception &e)
-    {
-        throw PacketException("Failed to create SendClientIni packet: " + std::string(e.what()));
-    }
-}
-
-std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestUserBanInfoPacket(const std::vector<uint8_t> &rawData)
-{
-    // TODO: Create RequestUserBanInfoPacket class - using NoOpPacket for now
-    try
-    {
-        ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
-        packet->read(buffer);
-        return packet;
-    }
-    catch (const std::exception &e)
-    {
-        throw PacketException("Failed to create RequestUserBanInfo packet: " + std::string(e.what()));
     }
 }
 

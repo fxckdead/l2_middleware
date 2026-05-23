@@ -11,7 +11,7 @@
 class UserInfo : public SendablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0x32; // UserInfo - Interlude Update 3
+    static constexpr uint8_t PACKET_ID = 0x04; // UserInfo - Interlude (Mobius ServerPackets.USER_INFO)
     const Player* player_;
 
 public:
