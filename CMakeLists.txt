@@ -130,6 +130,7 @@ add_executable(L2GameServer
     src/game/packets/requests/request_answer_join_pledge.cpp
     src/game/packets/requests/request_item_list.cpp
     src/game/packets/requests/request_show_mini_map.cpp
+    src/game/packets/requests/move_backward_to_location_packet.cpp
     src/game/packets/requests/extended/request_manor_list.cpp
     
     # Game response packets
