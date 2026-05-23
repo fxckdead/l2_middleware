@@ -3,18 +3,21 @@
 
 // Constructor
 MoveToLocation::MoveToLocation(const Player* player)
-    : m_objectId(player->getObjectId()),
-      m_x(player->getX()),
-      m_y(player->getY()),
-      m_z(player->getZ()),
-      m_xDst(player->getX()), // TODO: Implement destination coordinates in Player class
-      m_yDst(player->getY()), // TODO: Implement destination coordinates in Player class
-      m_zDst(player->getZ())  // TODO: Implement destination coordinates in Player class
+    : m_objectId(0),
+      m_x(0), m_y(0), m_z(0),
+      m_xDst(0), m_yDst(0), m_zDst(0)
 {
     if (!player)
     {
         throw std::invalid_argument("Player cannot be null for MoveToLocation packet");
     }
+    m_objectId = player->getObjectId();
+    m_x = player->getX();
+    m_y = player->getY();
+    m_z = player->getZ();
+    m_xDst = player->getDestX();
+    m_yDst = player->getDestY();
+    m_zDst = player->getDestZ();
 }
 
 void MoveToLocation::write(SendablePacketBuffer& buffer)
