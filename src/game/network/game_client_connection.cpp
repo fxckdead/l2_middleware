@@ -1030,6 +1030,15 @@ void GameClientConnection::handle_move_backward_to_location_packet(
         return;
     }
 
+    // Trust the client's reported origin. Without server geodata, the L2 Interlude
+    // client snaps the model to its own floor, drifting from whatever Z we sent at
+    // spawn. If MoveToLocation's FROM doesn't match the client's known self position,
+    // the client refuses the walk animation (only rotates). Resyncing server-side
+    // position to the client's reported origin makes FROM match and lets the client
+    // animate. We give up "server-authoritative position" here, which is fine
+    // until we have geodata to enforce it properly.
+    player->setPosition(ox, oy, oz);
+
     // Anti-exploit: huge distance. 9900*9900 = 98010000. Matches Mobius.
     const int64_t dx = static_cast<int64_t>(tx) - static_cast<int64_t>(player->getX());
     const int64_t dy = static_cast<int64_t>(ty) - static_cast<int64_t>(player->getY());

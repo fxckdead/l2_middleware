@@ -285,12 +285,12 @@ std::unique_ptr<Player> CharacterDatabaseManager::createDefaultPlayer(const std:
     player->setClassId(classId);
     player->setBaseClassId(classId); // Base class same as current class initially
 
-    // Default starting position: Talking Island Village, Human Fighter spawn cluster.
-    // Source: L2J Mobius CT_0 Interlude data/stats/chars/baseStats/HumanFighter.xml
-    // <creationPoints><node x="-71338" y="258271" z="-3104" />...
-    // Mobius picks one of four nearby nodes at random; we use the first deterministically
-    // until a per-class spawn template lands.
-    player->setPosition(-71338, 258271, -3104);
+    // Default starting position — Gludio-region "safer coordinates".
+    // Note: without server geodata the L2 Interlude client snaps the model to
+    // its own floor and may render the character ~50% submerged relative to the
+    // visible mesh. The Z we send does not affect visual altitude in that
+    // client. Proper fix needs GeoEngine.getHeight(x, y) per spawn point.
+    player->setPosition(-84318, 244579, -3730);
     player->setHeading(48969);
 
     // Default starting stats - Set proper starting HP/MP based on class/race

@@ -19,7 +19,11 @@ private:
     std::unordered_map<uint32_t, std::unique_ptr<Player>> m_characters;         // Character ID -> Player instance
     std::unordered_map<std::string, std::vector<uint32_t>> m_accountCharacters; // Account -> Character IDs
     mutable std::mutex m_charactersMutex;                                       // Thread safety for character operations
-    std::atomic<uint32_t> m_nextCharacterId{1};                                 // Auto-incrementing character ID
+    // L2J convention: PC object IDs start at 0x10000000. Some L2 Interlude clients
+    // have hardcoded assumptions about this range; using small IDs (e.g. 1) may
+    // cause the client to misclassify the character as an NPC/item and ignore
+    // MoveToLocation packets directed at it.
+    std::atomic<uint32_t> m_nextCharacterId{0x10000000};                        // Auto-incrementing character ID
 
 public:
     CharacterDatabaseManager() = default;
