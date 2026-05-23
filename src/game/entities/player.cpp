@@ -325,6 +325,7 @@ void Player::advanceMovement(int64_t nowMs)
     if (dist < 16.0) {
         setPosition(xDst_, yDst_, zDst_);
         isMoving_ = false;
+        std::cout << "[Movement] arrived at (" << xDst_ << "," << yDst_ << "," << zDst_ << ")" << std::endl;
         return;
     }
 
@@ -333,6 +334,8 @@ void Player::advanceMovement(int64_t nowMs)
         // Would overshoot - snap.
         setPosition(xDst_, yDst_, zDst_);
         isMoving_ = false;
+        std::cout << "[Movement] snap to (" << xDst_ << "," << yDst_ << "," << zDst_
+                  << ") (would overshoot by " << (step - dist) << ")" << std::endl;
         return;
     }
 
@@ -340,5 +343,8 @@ void Player::advanceMovement(int64_t nowMs)
     const int32_t nx = static_cast<int32_t>(static_cast<double>(getX()) + dx * frac);
     const int32_t ny = static_cast<int32_t>(static_cast<double>(getY()) + dy * frac);
     const int32_t nz = static_cast<int32_t>(static_cast<double>(getZ()) + dz * frac);
+    // Temporary diagnostic — verify tick is advancing position. Remove after smoke OK.
+    std::cout << "[Movement] tick dt=" << dt << "ms step=" << step
+              << " -> (" << nx << "," << ny << "," << nz << ") remaining=" << (dist - step) << std::endl;
     setPosition(nx, ny, nz);
 }

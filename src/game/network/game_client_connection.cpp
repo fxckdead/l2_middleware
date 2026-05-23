@@ -1094,17 +1094,18 @@ void GameClientConnection::handle_validate_position_packet(
     const int64_t dy = static_cast<int64_t>(cy) - static_cast<int64_t>(player->getY());
     const int64_t delta2 = dx*dx + dy*dy;
 
-    // Mobius threshold: 360000 = 600*600. Above this we don't trust the client.
-    if (delta2 < 360000LL) {
-        player->setPosition(cx, cy, cz);
-        player->setHeading(ch);
-    } else {
+    // Mobius threshold: 360000 = 600*600. Within this, the client and server agree
+    // closely enough that we keep the server's authoritative position untouched
+    // (ValidatePosition.java:86-100 — the small-delta branch does NOT update XYZ;
+    // it only triggers conditional snaps inside narrow sub-cases we don't need yet).
+    // Overwriting server position here would wipe out world-tick progress between VPs.
+    if (delta2 >= 360000LL) {
         // Snap client back to server-authoritative pos.
         send_packet(std::make_unique<ValidateLocation>(player));
         log_connection_event("ValidatePosition delta too large - sent ValidateLocation");
     }
 
-    // Always update client-mirror.
+    // Always update client-mirror (separate from authoritative position).
     player->setClientPosition(cx, cy, cz);
     player->setClientHeading(ch);
 }
