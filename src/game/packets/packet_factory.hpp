@@ -18,6 +18,8 @@
 #include "requests/request_answer_join_pledge.hpp"
 #include "requests/request_item_list.hpp"
 #include "requests/request_show_mini_map.hpp"
+#include "requests/move_backward_to_location_packet.hpp"
+#include "requests/validate_position_packet.hpp"
 #include "responses/char_info.hpp"
 
 #include <memory>
@@ -42,6 +44,7 @@ enum class GameClientPacketType : uint8_t
     RequestNewCharacter = 0x0E,     // New character info request
     RequestItemList = 0x0F,         // Request inventory item list
     RequestAnswerJoinPledge = 0x25, // Answer pledge join request
+    ValidatePosition = 0x48,        // Client position update (Mobius VALIDATE_POSITION)
     RequestSkillCoolTime = 0x9D,    // Request skill cooldown info
     RequestShowMiniMap = 0xCD,      // Request show minimap
     
@@ -88,6 +91,8 @@ private:
     static std::unique_ptr<ReadablePacket> createRequestAnswerJoinPledgePacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestSkillCoolTimePacket(const std::vector<uint8_t> &rawData);
     static std::unique_ptr<ReadablePacket> createRequestShowMiniMapPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createMoveBackwardToLocationPacket(const std::vector<uint8_t> &rawData);
+    static std::unique_ptr<ReadablePacket> createValidatePositionPacket(const std::vector<uint8_t> &rawData);
 
     // Create extended packet types (NEW - game server complexity)
     static std::unique_ptr<ReadablePacket> createExtendedPacket(const std::vector<uint8_t> &rawData);

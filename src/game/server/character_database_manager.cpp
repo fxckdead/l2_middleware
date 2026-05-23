@@ -285,7 +285,11 @@ std::unique_ptr<Player> CharacterDatabaseManager::createDefaultPlayer(const std:
     player->setClassId(classId);
     player->setBaseClassId(classId); // Base class same as current class initially
 
-    // Default starting position (safer coordinates for all races)
+    // Default starting position — Gludio-region "safer coordinates".
+    // Note: without server geodata the L2 Interlude client snaps the model to
+    // its own floor and may render the character ~50% submerged relative to the
+    // visible mesh. The Z we send does not affect visual altitude in that
+    // client. Proper fix needs GeoEngine.getHeight(x, y) per spawn point.
     player->setPosition(-84318, 244579, -3730);
     player->setHeading(48969);
 

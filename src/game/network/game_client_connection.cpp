@@ -42,8 +42,12 @@
 
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
+#include "../packets/requests/move_backward_to_location_packet.hpp"
+#include "../packets/requests/validate_position_packet.hpp"
+#include "../entities/player.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
+#include <chrono>
 
 // =============================================================================
 // Constructor
@@ -247,7 +251,7 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             handle_protocol_version_packet(packet);
             break;
         case 0x01: // MoveBackwardToLocation
-            log_connection_event("MoveBackwardToLocation packet received");
+            handle_move_backward_to_location_packet(packet);
             break;
         case 0x38: // Say2 (chat)
             log_connection_event("Say2 packet received");
@@ -284,6 +288,9 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             break;
         case 0x25: // RequestAnswerJoinPledge
             handle_request_answer_join_pledge_packet(packet);
+            break;
+        case 0x48: // ValidatePosition - client position update for reconciliation
+            handle_validate_position_packet(packet);
             break;
         case 0x9D: // RequestSkillCoolTime
             handle_request_skill_cool_time_packet(packet);
@@ -975,6 +982,81 @@ void GameClientConnection::handle_request_show_mini_map_packet(const std::unique
     }
 }
 
+void GameClientConnection::handle_move_backward_to_location_packet(
+    const std::unique_ptr<ReadablePacket>& packet)
+{
+    log_connection_event("Processing MoveBackwardToLocation");
+
+    if (get_game_state() != GameState::IN_GAME) {
+        log_connection_event("MoveBackwardToLocation in wrong state - dropping");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    auto *move = dynamic_cast<MoveBackwardToLocationPacket*>(packet.get());
+    if (!move) {
+        log_connection_event("MoveBackwardToLocation cast failed");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) {
+        log_connection_event("MoveBackwardToLocation: no db manager");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
+    if (!info) {
+        log_connection_event("MoveBackwardToLocation: no character at slot " + std::to_string(character_id_)
+                             + " for account " + player_name_);
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+    Player *player = *info;
+
+    const int32_t tx = move->getTargetX();
+    const int32_t ty = move->getTargetY();
+    const int32_t tz = move->getTargetZ();
+    const int32_t ox = move->getOriginX();
+    const int32_t oy = move->getOriginY();
+    const int32_t oz = move->getOriginZ();
+
+    // Cancel move: origin == target.
+    if (tx == ox && ty == oy && tz == oz) {
+        player->stopMove();
+        send_packet(std::make_unique<ActionFailed>());
+        log_connection_event("MoveBackwardToLocation: cancel (origin == target)");
+        return;
+    }
+
+    // Trust the client's reported origin. Without server geodata, the L2 Interlude
+    // client snaps the model to its own floor, drifting from whatever Z we sent at
+    // spawn. If MoveToLocation's FROM doesn't match the client's known self position,
+    // the client refuses the walk animation (only rotates). Resyncing server-side
+    // position to the client's reported origin makes FROM match and lets the client
+    // animate. We give up "server-authoritative position" here, which is fine
+    // until we have geodata to enforce it properly.
+    player->setPosition(ox, oy, oz);
+
+    // Anti-exploit: huge distance. 9900*9900 = 98010000. Matches Mobius.
+    const int64_t dx = static_cast<int64_t>(tx) - static_cast<int64_t>(player->getX());
+    const int64_t dy = static_cast<int64_t>(ty) - static_cast<int64_t>(player->getY());
+    if ((dx*dx + dy*dy) > 98010000LL) {
+        log_connection_event("MoveBackwardToLocation: distance too large - dropping");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    const int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    player->setMoveDestination(tx, ty, tz, nowMs);
+
+    send_packet(std::make_unique<MoveToLocation>(player));
+    log_connection_event("MoveBackwardToLocation: dest set to ("
+        + std::to_string(tx) + "," + std::to_string(ty) + "," + std::to_string(tz) + ")");
+}
+
 // =============================================================================
 // Utility Functions
 // =============================================================================
@@ -994,4 +1076,60 @@ const char *game_state_to_string(GameClientConnection::GameState state)
     default:
         return "UNKNOWN";
     }
+}
+
+void GameClientConnection::handle_validate_position_packet(
+    const std::unique_ptr<ReadablePacket>& packet)
+{
+    if (get_game_state() != GameState::IN_GAME) {
+        return; // silent - these packets are noisy
+    }
+
+    auto *vp = dynamic_cast<ValidatePositionPacket*>(packet.get());
+    if (!vp) return;
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) return;
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
+    if (!info) return;
+    Player *player = *info;
+
+    const int32_t cx = vp->getX();
+    const int32_t cy = vp->getY();
+    const int32_t cz = vp->getZ();
+    const int32_t ch = vp->getHeading();
+
+    const int64_t dx = static_cast<int64_t>(cx) - static_cast<int64_t>(player->getX());
+    const int64_t dy = static_cast<int64_t>(cy) - static_cast<int64_t>(player->getY());
+    const int64_t delta2 = dx*dx + dy*dy;
+
+    // Mobius threshold: 360000 = 600*600. Within this, the client and server agree
+    // closely enough that we keep the server's authoritative position untouched
+    // (ValidatePosition.java:86-100 — the small-delta branch does NOT update XYZ;
+    // it only triggers conditional snaps inside narrow sub-cases we don't need yet).
+    // Overwriting server position here would wipe out world-tick progress between VPs.
+    if (delta2 >= 360000LL) {
+        // Snap client back to server-authoritative pos.
+        send_packet(std::make_unique<ValidateLocation>(player));
+        log_connection_event("ValidatePosition delta too large - sent ValidateLocation");
+    }
+
+    // Always update client-mirror (separate from authoritative position).
+    player->setClientPosition(cx, cy, cz);
+    player->setClientHeading(ch);
+}
+
+void GameClientConnection::advance_player_movement(int64_t nowMs)
+{
+    if (get_game_state() != GameState::IN_GAME) return;
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) return;
+    // character_id_ is a slot index (0..6) per the existing codebase convention,
+    // matching set_character_id() in handle_request_game_start_packet.
+    auto info = db->getCharacterBySlot(player_name_, character_id_);
+    if (!info) return;
+
+    Player *player = *info;
+    player->advanceMovement(nowMs);
 }

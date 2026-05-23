@@ -48,6 +48,10 @@ private:
     // Signal handling
     std::unique_ptr<boost::asio::signal_set> signals_;
 
+    // World tick: advances moving players' positions on a fixed cadence.
+    std::unique_ptr<boost::asio::steady_timer> world_tick_timer_;
+    static constexpr std::chrono::milliseconds kWorldTickInterval{100};
+
 public:
     explicit GameServer(const Config &config = Config{});
     ~GameServer();
@@ -85,6 +89,10 @@ private:
     void handle_accept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
     void setup_signal_handlers();
     void shutdown_server();
+
+    // World tick implementation
+    void start_world_tick();
+    void process_world_tick(const boost::system::error_code &ec);
 
     // Utility
     void log_server_event(const std::string &event) const;

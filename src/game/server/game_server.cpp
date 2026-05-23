@@ -1,5 +1,6 @@
 #include "game_server.hpp"
 #include "../network/game_connection_manager.hpp"
+#include "../network/game_client_connection.hpp"
 #include "character_database_manager.hpp"
 #include <iostream>
 #include <iomanip>
@@ -69,6 +70,8 @@ void GameServer::start()
 
         // Start accepting connections
         start_accepting();
+        // Start world tick after accepting begins.
+        start_world_tick();
     }
     catch (const std::exception &e)
     {
@@ -266,6 +269,15 @@ void GameServer::shutdown_server()
 {
     running_.store(false);
 
+    // Cancel world tick first so it stops re-arming.
+    if (world_tick_timer_) {
+        try {
+            world_tick_timer_->cancel();
+        } catch (const std::exception &) {
+            // Ignore cancel errors during shutdown.
+        }
+    }
+
     // Close acceptor
     if (acceptor_)
     {
@@ -311,4 +323,49 @@ void GameServer::print_shutdown_message() const
               << std::string(60, '=') << std::endl;
     std::cout << "        GAME SERVER SHUTDOWN COMPLETE" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
-} 
+}
+
+void GameServer::start_world_tick()
+{
+    world_tick_timer_ = std::make_unique<boost::asio::steady_timer>(io_context_);
+    world_tick_timer_->expires_after(kWorldTickInterval);
+    world_tick_timer_->async_wait(
+        [this](const boost::system::error_code &ec) { process_world_tick(ec); });
+    log_server_event("World tick started ("
+        + std::to_string(kWorldTickInterval.count()) + "ms interval)");
+}
+
+void GameServer::process_world_tick(const boost::system::error_code &ec)
+{
+    if (ec == boost::asio::error::operation_aborted) {
+        return; // cancellation - normal during shutdown
+    }
+    if (ec) {
+        log_server_event("World tick error: " + ec.message());
+        return;
+    }
+
+    const int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+
+    if (connection_manager_) {
+        auto conns = connection_manager_->get_all_connections();
+        for (auto &base : conns) {
+            try {
+                auto game_conn = std::dynamic_pointer_cast<GameClientConnection>(base);
+                if (game_conn) {
+                    game_conn->advance_player_movement(nowMs);
+                }
+            } catch (const std::exception &e) {
+                log_server_event(std::string("World tick: per-connection exception: ") + e.what());
+            }
+        }
+    }
+
+    // Re-arm.
+    if (running_.load() && world_tick_timer_) {
+        world_tick_timer_->expires_after(kWorldTickInterval);
+        world_tick_timer_->async_wait(
+            [this](const boost::system::error_code &ec) { process_world_tick(ec); });
+    }
+}

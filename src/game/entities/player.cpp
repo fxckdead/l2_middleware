@@ -1,6 +1,8 @@
 #include "player.hpp"
 #include <iostream>
 #include <iomanip>
+#include <cmath>
+#include <algorithm>
 
 Player::Player(uint32_t objectId, const std::string& name, const std::string& accountName)
     : Creature(objectId, name)
@@ -23,6 +25,15 @@ Player::Player(uint32_t objectId, const std::string& name, const std::string& ac
     , augmentationId_(0)
     , paperdollObjectIds_(16, 0)
     , paperdollItemIds_(16, 0)
+    , xDst_(0)
+    , yDst_(0)
+    , zDst_(0)
+    , isMoving_(false)
+    , lastMoveTickMs_(0)
+    , clientX_(0)
+    , clientY_(0)
+    , clientZ_(0)
+    , clientHeading_(0)
     , clan_(nullptr)
     , party_(nullptr)
     , isOnline_(false)
@@ -253,4 +264,81 @@ void Player::dump() const
     std::cout << "PC Cafe Points: " << pccafe_points_ << std::endl;
     
     std::cout << "=== End Player Dump ===\n" << std::endl;
-} 
+}
+
+void Player::setClientPosition(int32_t x, int32_t y, int32_t z)
+{
+    clientX_ = x;
+    clientY_ = y;
+    clientZ_ = z;
+}
+
+void Player::setClientHeading(int32_t heading)
+{
+    clientHeading_ = heading;
+}
+
+void Player::setMoveDestination(int32_t x, int32_t y, int32_t z, int64_t nowMs)
+{
+    xDst_ = x;
+    yDst_ = y;
+    zDst_ = z;
+
+    // L2 heading: 16-bit (0..65535) covering one full turn, atan2(dy, dx) * 32768/pi.
+    const double dx = static_cast<double>(x) - static_cast<double>(getX());
+    const double dy = static_cast<double>(y) - static_cast<double>(getY());
+    const double radians = std::atan2(dy, dx);
+    const double pi = 3.14159265358979323846;
+    int32_t heading = static_cast<int32_t>(radians * 32768.0 / pi);
+    // Normalize into [0, 65535].
+    heading &= 0xFFFF;
+    setHeading(heading);
+
+    isMoving_ = true;
+    lastMoveTickMs_ = nowMs;
+}
+
+void Player::stopMove()
+{
+    isMoving_ = false;
+}
+
+void Player::advanceMovement(int64_t nowMs)
+{
+    if (!isMoving_) {
+        return;
+    }
+
+    // Clamp dt to [0, 1000] ms: guards first tick (lastMoveTickMs_ may equal nowMs)
+    // and pathological pauses (e.g. server stalls).
+    int64_t dt = nowMs - lastMoveTickMs_;
+    if (dt < 0) dt = 0;
+    if (dt > 1000) dt = 1000;
+    lastMoveTickMs_ = nowMs;
+
+    const double dx = static_cast<double>(xDst_) - static_cast<double>(getX());
+    const double dy = static_cast<double>(yDst_) - static_cast<double>(getY());
+    const double dz = static_cast<double>(zDst_) - static_cast<double>(getZ());
+    const double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+    // Arrival epsilon = 16 (matches Mobius geodata cell size).
+    if (dist < 16.0) {
+        setPosition(xDst_, yDst_, zDst_);
+        isMoving_ = false;
+        return;
+    }
+
+    const double step = (static_cast<double>(getRunSpeed()) * static_cast<double>(dt)) / 1000.0;
+    if (step >= dist) {
+        // Would overshoot - snap.
+        setPosition(xDst_, yDst_, zDst_);
+        isMoving_ = false;
+        return;
+    }
+
+    const double frac = step / dist;
+    const int32_t nx = static_cast<int32_t>(static_cast<double>(getX()) + dx * frac);
+    const int32_t ny = static_cast<int32_t>(static_cast<double>(getY()) + dy * frac);
+    const int32_t nz = static_cast<int32_t>(static_cast<double>(getZ()) + dz * frac);
+    setPosition(nx, ny, nz);
+}

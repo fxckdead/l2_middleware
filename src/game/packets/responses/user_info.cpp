@@ -91,8 +91,11 @@ void UserInfo::write(SendablePacketBuffer &buffer)
     // 18. Right hand augmentation
     buffer.writeInt32(0); // TODO: Implement augmentation system
     
-    // 19. More C6 fields (13 shorts)
-    for (int i = 0; i < 13; ++i) {
+    // 19. More C6 fields (12 shorts) — Mobius UserInfo.java:150-161 writes exactly 12,
+    // not 13. The extra short was shifting every subsequent field by 2 bytes,
+    // which caused the client to read garbage for runSpd/walkSpd and to refuse
+    // walk animation while still allowing rotation.
+    for (int i = 0; i < 12; ++i) {
         buffer.writeInt16(0);
     }
     
@@ -249,7 +252,7 @@ size_t UserInfo::getSize() const
     // C6 fields
     size += 2 * 14; // 14 shorts
     size += 4; // Right hand augmentation
-    size += 2 * 13; // 13 shorts
+    size += 2 * 12; // 12 shorts (matches Mobius UserInfo.java:150-161, was 13 — bug)
     size += 4; // Right hand augmentation (duplicate)
     size += 2 * 4; // 4 shorts
     
