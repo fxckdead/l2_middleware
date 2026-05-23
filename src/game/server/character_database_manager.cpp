@@ -285,8 +285,12 @@ std::unique_ptr<Player> CharacterDatabaseManager::createDefaultPlayer(const std:
     player->setClassId(classId);
     player->setBaseClassId(classId); // Base class same as current class initially
 
-    // Default starting position (safer coordinates for all races)
-    player->setPosition(-84318, 244579, -3730);
+    // Default starting position: Talking Island Village, Human Fighter spawn cluster.
+    // Source: L2J Mobius CT_0 Interlude data/stats/chars/baseStats/HumanFighter.xml
+    // <creationPoints><node x="-71338" y="258271" z="-3104" />...
+    // Mobius picks one of four nearby nodes at random; we use the first deterministically
+    // until a per-class spawn template lands.
+    player->setPosition(-71338, 258271, -3104);
     player->setHeading(48969);
 
     // Default starting stats - Set proper starting HP/MP based on class/race
