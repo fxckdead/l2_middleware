@@ -59,6 +59,10 @@ public:
     // Override send_packet to use 8-byte padding for Blowfish (Game Server specific)
     void send_packet(std::unique_ptr<SendablePacket> packet) override;
 
+    // Called by GameServer's world tick. Advances the attached player's position
+    // toward destination if the player is moving. No-op if not in IN_GAME or no character.
+    void advance_player_movement(int64_t nowMs);
+
 protected:
     // Implementation of virtual methods from BaseClientConnection
     void handle_complete_packet(std::vector<uint8_t> packet_data) override;

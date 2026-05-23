@@ -1107,3 +1107,17 @@ void GameClientConnection::handle_validate_position_packet(
     player->setClientPosition(cx, cy, cz);
     player->setClientHeading(ch);
 }
+
+void GameClientConnection::advance_player_movement(int64_t nowMs)
+{
+    if (get_game_state() != GameState::IN_GAME) return;
+    if (character_id_ == 0) return;
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) return;
+    auto info = db->getCharacterById(character_id_);
+    if (!info) return;
+
+    Player *player = *info;
+    player->advanceMovement(nowMs);
+}
