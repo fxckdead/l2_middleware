@@ -42,8 +42,11 @@
 
 #include "../packets/requests/enter_world_packet.hpp"
 #include "../packets/requests/request_game_start.hpp"
+#include "../packets/requests/move_backward_to_location_packet.hpp"
+#include "../entities/player.hpp"
 #include "../server/game_server.hpp"
 #include "../server/character_database_manager.hpp"
+#include <chrono>
 
 // =============================================================================
 // Constructor
@@ -247,7 +250,7 @@ void GameClientConnection::handle_game_packet(std::unique_ptr<ReadablePacket> pa
             handle_protocol_version_packet(packet);
             break;
         case 0x01: // MoveBackwardToLocation
-            log_connection_event("MoveBackwardToLocation packet received");
+            handle_move_backward_to_location_packet(packet);
             break;
         case 0x38: // Say2 (chat)
             log_connection_event("Say2 packet received");
@@ -973,6 +976,71 @@ void GameClientConnection::handle_request_show_mini_map_packet(const std::unique
     {
         log_connection_event("Error handling RequestShowMiniMap packet: " + std::string(e.what()));
     }
+}
+
+void GameClientConnection::handle_move_backward_to_location_packet(
+    const std::unique_ptr<ReadablePacket>& packet)
+{
+    log_connection_event("Processing MoveBackwardToLocation");
+
+    if (get_game_state() != GameState::IN_GAME) {
+        log_connection_event("MoveBackwardToLocation in wrong state - dropping");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    auto *move = dynamic_cast<MoveBackwardToLocationPacket*>(packet.get());
+    if (!move) {
+        log_connection_event("MoveBackwardToLocation cast failed");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    auto *db = getCharacterDatabaseManager();
+    if (!db) {
+        log_connection_event("MoveBackwardToLocation: no db manager");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+    auto info = db->getCharacterById(character_id_);
+    if (!info) {
+        log_connection_event("MoveBackwardToLocation: no character " + std::to_string(character_id_));
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+    Player *player = *info;
+
+    const int32_t tx = move->getTargetX();
+    const int32_t ty = move->getTargetY();
+    const int32_t tz = move->getTargetZ();
+    const int32_t ox = move->getOriginX();
+    const int32_t oy = move->getOriginY();
+    const int32_t oz = move->getOriginZ();
+
+    // Cancel move: origin == target.
+    if (tx == ox && ty == oy && tz == oz) {
+        player->stopMove();
+        send_packet(std::make_unique<ActionFailed>());
+        log_connection_event("MoveBackwardToLocation: cancel (origin == target)");
+        return;
+    }
+
+    // Anti-exploit: huge distance. 9900*9900 = 98010000. Matches Mobius.
+    const int64_t dx = static_cast<int64_t>(tx) - static_cast<int64_t>(player->getX());
+    const int64_t dy = static_cast<int64_t>(ty) - static_cast<int64_t>(player->getY());
+    if ((dx*dx + dy*dy) > 98010000LL) {
+        log_connection_event("MoveBackwardToLocation: distance too large - dropping");
+        send_packet(std::make_unique<ActionFailed>());
+        return;
+    }
+
+    const int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    player->setMoveDestination(tx, ty, tz, nowMs);
+
+    send_packet(std::make_unique<MoveToLocation>(player));
+    log_connection_event("MoveBackwardToLocation: dest set to ("
+        + std::to_string(tx) + "," + std::to_string(ty) + "," + std::to_string(tz) + ")");
 }
 
 // =============================================================================
