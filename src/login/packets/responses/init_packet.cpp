@@ -31,7 +31,6 @@ void InitPacket::write(SendablePacketBuffer &buffer)
     // Write packet structure according to network-steps.md:
     // Opcode + Session ID + Protocol + RSA Key + GameGuard + Blowfish Key + Null
 
-    buffer.writeUInt8(OPCODE);             // Opcode: 0x00 (Init)
     buffer.writeInt32(m_sessionId);        // Session ID: random i32
     buffer.writeInt32(PROTOCOL_REVISION);  // Protocol revision: 0x0000c621
     buffer.writeBytes(m_scrambledModulus); // RSA public key: 128 bytes (scrambled modulus)

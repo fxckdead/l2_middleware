@@ -4,17 +4,18 @@
 #include "../../../../core/network/packet_buffer.hpp"
 #include <cstdint>
 
-class GoLobbyPacket : public ReadablePacket
+class RequestManorList : public ReadablePacket
 {
 private:
-    static constexpr uint8_t PACKET_ID = 0xFF;
+    static constexpr uint8_t PACKET_ID = 0xD0;
+    static constexpr uint16_t EX_PACKET_ID = 0x08;
 
 public:
-    GoLobbyPacket() = default;
+    RequestManorList() = default;
 
     uint8_t getPacketId() const override;
     std::optional<uint16_t> getExPacketId() const override;
     void read(ReadablePacketBuffer &buffer) override;
 
     bool isValid() const;
-};
+}; 

@@ -124,49 +124,59 @@ double ReadablePacketBuffer::readFloat64()
 std::string ReadablePacketBuffer::readCUtf16leString()
 {
     std::string result;
-    
-    while (m_position + 1 < m_bytes.size()) {
+
+    while (m_position + 1 < m_bytes.size())
+    {
         // Read UTF-16LE character (2 bytes, little-endian)
         uint16_t char16 = readUInt16();
-        
+
         // Check for null terminator
-        if (char16 == 0) {
+        if (char16 == 0)
+        {
             break;
         }
-        
+
         // Simple conversion: for now, just convert to ASCII (assuming ASCII characters)
-        if (char16 < 128) {
+        if (char16 < 128)
+        {
             result += static_cast<char>(char16);
-        } else {
+        }
+        else
+        {
             // For non-ASCII characters, you might want to implement proper UTF-16 to UTF-8 conversion
             result += '?'; // Placeholder for unsupported characters
         }
     }
-    
+
     return result;
 }
 
 std::string ReadablePacketBuffer::readSizedString()
 {
     uint32_t size = readUInt32();
-    if (size == 0) {
+    if (size == 0)
+    {
         return std::string();
     }
-    
+
     // Size includes null terminator, so read size-2 characters plus 2-byte null terminator
     std::string result;
-    for (uint32_t i = 0; i < size / 2 - 1; ++i) { // Each character is 2 bytes, minus null terminator
+    for (uint32_t i = 0; i < size / 2 - 1; ++i)
+    { // Each character is 2 bytes, minus null terminator
         uint16_t char16 = readUInt16();
-        if (char16 < 128) {
+        if (char16 < 128)
+        {
             result += static_cast<char>(char16);
-        } else {
+        }
+        else
+        {
             result += '?';
         }
     }
-    
+
     // Read and discard null terminator
     readUInt16();
-    
+
     return result;
 }
 
@@ -174,11 +184,12 @@ std::vector<std::string> ReadablePacketBuffer::readNStrings(size_t count)
 {
     std::vector<std::string> result;
     result.reserve(count);
-    
-    for (size_t i = 0; i < count; ++i) {
+
+    for (size_t i = 0; i < count; ++i)
+    {
         result.push_back(readCUtf16leString());
     }
-    
+
     return result;
 }
 
@@ -283,6 +294,19 @@ void SendablePacketBuffer::writeUInt32(uint32_t value)
     write(static_cast<uint8_t>((value >> 24) & 0xFF));
 }
 
+void SendablePacketBuffer::writeInt64(int64_t value)
+{
+    uint64_t uval = static_cast<uint64_t>(value);
+    write(static_cast<uint8_t>(uval & 0xFF));
+    write(static_cast<uint8_t>((uval >> 8) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 16) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 24) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 32) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 40) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 48) & 0xFF));
+    write(static_cast<uint8_t>((uval >> 56) & 0xFF));
+}
+
 void SendablePacketBuffer::writeUInt64(uint64_t value)
 {
     write(static_cast<uint8_t>(value & 0xFF));
@@ -375,9 +399,12 @@ void SendablePacketBuffer::writeCUtf16leString(const std::string &value)
 
 void SendablePacketBuffer::writeCUtf16leString(const std::optional<std::string> &value)
 {
-    if (value.has_value()) {
+    if (value.has_value())
+    {
         writeCUtf16leString(value.value());
-    } else {
+    }
+    else
+    {
         // Write empty string (just null terminator)
         writeUInt16(0);
     }
@@ -397,9 +424,12 @@ void SendablePacketBuffer::writeSizedCUtf16leString(const std::string &value)
 
 void SendablePacketBuffer::writeSizedCUtf16leString(const std::optional<std::string> &value)
 {
-    if (value.has_value()) {
+    if (value.has_value())
+    {
         writeSizedCUtf16leString(value.value());
-    } else {
+    }
+    else
+    {
         // Write empty string size (just null terminator)
         writeUInt32(2);
         writeUInt16(0);
@@ -411,12 +441,13 @@ std::vector<uint8_t> SendablePacketBuffer::encodeUtf16le(const std::string &str)
 {
     std::vector<uint8_t> result;
     result.reserve(str.length() * 2);
-    
-    for (char c : str) {
+
+    for (char c : str)
+    {
         // Simple ASCII to UTF-16LE conversion
-        result.push_back(static_cast<uint8_t>(c));  // Low byte
-        result.push_back(0);                        // High byte (0 for ASCII)
+        result.push_back(static_cast<uint8_t>(c)); // Low byte
+        result.push_back(0);                       // High byte (0 for ASCII)
     }
-    
+
     return result;
 }

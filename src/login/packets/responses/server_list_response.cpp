@@ -30,11 +30,9 @@ std::optional<uint16_t> ServerListResponse::getExPacketId() const
 
 void ServerListResponse::write(SendablePacketBuffer &buffer)
 {
-    // Write packet structure exactly matching Rust implementation:
     // opcode + server_count + last_server + server_data_for_each + trailer + character_info
 
     // Header
-    buffer.writeUInt8(OPCODE);                              // Opcode: 0x04 (ServerList)
     buffer.writeUInt8(static_cast<uint8_t>(m_servers.size())); // Server count
     buffer.writeUInt8(m_lastServer);                        // Last server selection
 

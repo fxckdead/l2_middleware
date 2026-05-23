@@ -13,8 +13,29 @@ std::vector<uint8_t> SendablePacket::serialize(bool withPadding)
 std::vector<uint8_t> SendablePacket::serialize(bool withPadding, size_t alignment)
 {
     SendablePacketBuffer buffer;
+    
+    // Write opcode automatically (handles both standard and extended packets)
+    writeOpcode(buffer);
+    
+    // Write packet data
     write(buffer);
+    
     return buffer.getData(withPadding, alignment);
+}
+
+// Helper method to write opcode (handles extended packets automatically)
+void SendablePacket::writeOpcode(SendablePacketBuffer &buffer) const
+{
+    uint16_t extendedPacketId = getExtendedPacketId();
+    
+    if (extendedPacketId != 0) {
+        // Extended packet: write 0xFE prefix + 16-bit sub-opcode
+        buffer.writeUInt8(0xFE);
+        buffer.writeUInt16(extendedPacketId);
+    } else {
+        // Standard packet: write 8-bit opcode
+        buffer.writeUInt8(getPacketId());
+    }
 }
 
 // ReadablePacket factory method (basic implementation)

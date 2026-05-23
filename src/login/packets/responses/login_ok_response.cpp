@@ -21,10 +21,8 @@ std::optional<uint16_t> LoginOkResponse::getExPacketId() const
 
 void LoginOkResponse::write(SendablePacketBuffer &buffer)
 {
-    // Write packet structure exactly matching Rust implementation:
     // opcode + login_ok1 + login_ok2 + zeros + 0x03ea + zeros + 16 zero bytes
 
-    buffer.writeUInt8(OPCODE);                 // Opcode: 0x03 (LoginOk)
     buffer.writeInt32(m_sessionKey.login_ok1); // Session key part 1
     buffer.writeInt32(m_sessionKey.login_ok2); // Session key part 2
     buffer.writeInt32(0x00);                   // Zero padding

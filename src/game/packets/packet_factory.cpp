@@ -3,6 +3,10 @@
 #include "requests/no_op_packet.hpp"
 #include "requests/create_char_request_packet.hpp"
 #include "requests/request_game_start.hpp"
+#include "requests/request_skill_cool_time.hpp"
+#include "requests/request_answer_join_pledge.hpp"
+#include "requests/request_item_list.hpp"
+#include "requests/request_show_mini_map.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -37,8 +41,8 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
         // 0x01 - Movement packet
         return createNoOpPacket(packetData);
 
-    case GameClientPacketType::Say:
-        // 0x02 - Chat packet
+    case GameClientPacketType::Say2:
+        // 0x38 - Chat packet (Say2)
         return createNoOpPacket(packetData);
 
     case GameClientPacketType::RequestEnterWorld:
@@ -67,7 +71,7 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
 
     case GameClientPacketType::RequestCharacterDelete:
         // 0x0C - Character deletion
-        return createDeleteCharPacket(packetData);
+        return createRequestCharacterDeletePacket(packetData);
 
     case GameClientPacketType::RequestGameStart:
         // 0x0D - Game start (character selection)
@@ -76,6 +80,22 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createFromClientData(
     case GameClientPacketType::RequestNewCharacter:
         // 0x0E - New character info request
         return createNewCharRequestPacket(packetData);
+
+    case GameClientPacketType::RequestItemList:
+        // 0x0F - Request inventory item list
+        return createRequestItemListPacket(packetData);
+
+    case GameClientPacketType::RequestAnswerJoinPledge:
+        // 0x25 - Answer pledge join request
+        return createRequestAnswerJoinPledgePacket(packetData);
+
+    case GameClientPacketType::RequestSkillCoolTime:
+        // 0x9D - Request skill cooldown info
+        return createRequestSkillCoolTimePacket(packetData);
+
+    case GameClientPacketType::RequestShowMiniMap:
+        // 0xCD - Request show minimap
+        return createRequestShowMiniMapPacket(packetData);
 
     default:
         return createNoOpPacket(packetData);
@@ -185,12 +205,12 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createLogoutPacket(const std:
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createDeleteCharPacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestCharacterDeletePacket(const std::vector<uint8_t> &rawData)
 {
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<DeleteCharPacket>();
+        auto packet = std::make_unique<RequestCharacterDeletePacket>();
         packet->read(buffer);
         return packet;
     }
@@ -276,84 +296,97 @@ std::unique_ptr<ReadablePacket> GamePacketFactory::createExtendedPacket(const st
 
     switch (static_cast<ExtendedGamePacketType>(sub_opcode))
     {
-    case ExtendedGamePacketType::GoLobby:
-        return createGoLobbyPacket(extPacketData);
-
-    case ExtendedGamePacketType::CheckCharName:
-        return createCheckCharNamePacket(extPacketData);
-
-    case ExtendedGamePacketType::SendClientIni:
-        return createSendClientIniPacket(extPacketData);
-
-    case ExtendedGamePacketType::RequestUserBanInfo:
-        return createRequestUserBanInfoPacket(extPacketData);
+    case ExtendedGamePacketType::RequestManorList:
+        return createRequestManorListPacket(extPacketData);
 
     default:
+        std::cout << "[ExtendedPacket] Unknown sub-opcode: 0x" << std::hex << sub_opcode 
+                  << " (decimal: " << std::dec << sub_opcode << ")" << std::endl;
+        std::cout << "[ExtendedPacket] Raw data size: " << rawData.size() << " bytes" << std::endl;
+        if (!rawData.empty()) {
+            std::cout << "[ExtendedPacket] Raw data: ";
+            for (size_t i = 0; i < std::min(rawData.size(), size_t(16)); ++i) {
+                std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(rawData[i]) << " ";
+            }
+            std::cout << std::dec << std::endl;
+        }
         throw PacketException("Unknown extended game packet sub-opcode: 0x" +
                               std::to_string(sub_opcode));
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createGoLobbyPacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestManorListPacket(const std::vector<uint8_t> &rawData)
 {
-    // TODO: Create GoLobbyPacket class - using NoOpPacket for now
+    // RequestManorList - Manor (farming) system request
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
+        auto packet = std::make_unique<RequestManorList>();
         packet->read(buffer);
         return packet;
     }
     catch (const std::exception &e)
     {
-        throw PacketException("Failed to create GoLobby packet: " + std::string(e.what()));
+        throw PacketException("Failed to create RequestManorList packet: " + std::string(e.what()));
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createCheckCharNamePacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestAnswerJoinPledgePacket(const std::vector<uint8_t> &rawData)
 {
-    // TODO: Create CheckCharNamePacket class - using NoOpPacket for now
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
+        auto packet = std::make_unique<RequestAnswerJoinPledge>();
         packet->read(buffer);
         return packet;
     }
     catch (const std::exception &e)
     {
-        throw PacketException("Failed to create CheckCharName packet: " + std::string(e.what()));
+        throw PacketException("Failed to create RequestAnswerJoinPledge packet: " + std::string(e.what()));
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createSendClientIniPacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestItemListPacket(const std::vector<uint8_t> &rawData)
 {
-    // TODO: Create SendClientIniPacket class - using NoOpPacket for now
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
+        auto packet = std::make_unique<RequestItemList>();
         packet->read(buffer);
         return packet;
     }
     catch (const std::exception &e)
     {
-        throw PacketException("Failed to create SendClientIni packet: " + std::string(e.what()));
+        throw PacketException("Failed to create RequestItemList packet: " + std::string(e.what()));
     }
 }
 
-std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestUserBanInfoPacket(const std::vector<uint8_t> &rawData)
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestSkillCoolTimePacket(const std::vector<uint8_t> &rawData)
 {
-    // TODO: Create RequestUserBanInfoPacket class - using NoOpPacket for now
     try
     {
         ReadablePacketBuffer buffer(rawData);
-        auto packet = std::make_unique<NoOpPacket>();
+        auto packet = std::make_unique<RequestSkillCoolTime>();
         packet->read(buffer);
         return packet;
     }
     catch (const std::exception &e)
     {
-        throw PacketException("Failed to create RequestUserBanInfo packet: " + std::string(e.what()));
+        throw PacketException("Failed to create RequestSkillCoolTime packet: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<ReadablePacket> GamePacketFactory::createRequestShowMiniMapPacket(const std::vector<uint8_t> &rawData)
+{
+    try
+    {
+        ReadablePacketBuffer buffer(rawData);
+        auto packet = std::make_unique<RequestShowMiniMap>();
+        packet->read(buffer);
+        return packet;
+    }
+    catch (const std::exception &e)
+    {
+        throw PacketException("Failed to create RequestShowMiniMap packet: " + std::string(e.what()));
     }
 }

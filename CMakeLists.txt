@@ -102,6 +102,11 @@ add_executable(L2GameServer
     src/game/server/game_server.cpp
     src/game/server/character_database_manager.cpp
     
+    # Game entities
+    src/game/entities/world_object.cpp
+    src/game/entities/creature.cpp
+    src/game/entities/player.cpp
+    
     # Game-specific networking
     src/game/network/game_connection_manager.cpp
     src/game/network/game_client_connection.cpp
@@ -116,11 +121,16 @@ add_executable(L2GameServer
     src/game/packets/requests/create_char_request_packet.cpp
     src/game/packets/requests/request_game_start.cpp
     src/game/packets/requests/logout_packet.cpp
-    src/game/packets/requests/delete_char_packet.cpp
+    src/game/packets/requests/request_delete_character_packet.cpp
     src/game/packets/requests/restore_char_packet.cpp
     src/game/packets/requests/select_char_packet.cpp
     src/game/packets/requests/enter_world_packet.cpp
     src/game/packets/requests/no_op_packet.cpp
+    src/game/packets/requests/request_skill_cool_time.cpp
+    src/game/packets/requests/request_answer_join_pledge.cpp
+    src/game/packets/requests/request_item_list.cpp
+    src/game/packets/requests/request_show_mini_map.cpp
+    src/game/packets/requests/extended/request_manor_list.cpp
     
     # Game response packets
     src/game/packets/responses/ping_response.cpp
@@ -128,6 +138,38 @@ add_executable(L2GameServer
     src/game/packets/responses/character_selection_info.cpp
     src/game/packets/responses/new_character_success.cpp
     src/game/packets/responses/character_create_success.cpp
+    src/game/packets/responses/character_selected.cpp
+    src/game/packets/responses/user_info.cpp
+    src/game/packets/responses/validate_location.cpp
+    src/game/packets/responses/item_list.cpp
+    src/game/packets/responses/skill_cool_time.cpp
+    src/game/packets/responses/shortcut_init.cpp
+    src/game/packets/responses/etc_status_update.cpp
+    src/game/packets/responses/ex_storage_max_count.cpp
+    src/game/packets/responses/quest_list.cpp
+    src/game/packets/responses/send_macro_list.cpp
+    src/game/packets/responses/move_to_location.cpp
+    src/game/packets/responses/ex_set_compass_zone_code.cpp
+    src/game/packets/responses/creature_say.cpp
+    src/game/packets/responses/npc_info.cpp
+    src/game/packets/responses/abnormal_status_update.cpp
+    # Social/Clan packets
+    src/game/packets/responses/henna_info.cpp
+    src/game/packets/responses/pledge_skill_list.cpp
+    src/game/packets/responses/friend_list.cpp
+    src/game/packets/responses/pledge_show_member_list_all.cpp
+    src/game/packets/responses/pledge_status_changed.cpp
+    src/game/packets/responses/ask_join_pledge.cpp
+    src/game/packets/responses/npc_html_message.cpp
+    src/game/packets/responses/ex_send_manor_list.cpp
+    src/game/packets/responses/skill_list.cpp
+    src/game/packets/responses/status_update.cpp
+    src/game/packets/responses/char_info.cpp
+    # Welcome/System packets
+    src/game/packets/responses/system_message.cpp
+    src/game/packets/responses/ex_show_screen_message.cpp
+    src/game/packets/responses/action_failed.cpp
+    src/game/packets/responses/show_mini_map.cpp
 )
 
 target_link_libraries(L2GameServer L2Core)

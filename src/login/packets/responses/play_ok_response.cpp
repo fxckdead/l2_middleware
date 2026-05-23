@@ -12,9 +12,7 @@ void PlayOkResponse::write(SendablePacketBuffer &buffer)
 {
     try
     {
-        // Write packet ID (matches Rust LoginServerOpcodes::PlayOk = 0x07)
-        buffer.writeUInt8(PACKET_ID);
-        
+        // Opcode is written automatically by base class
         // Write session key for game server connection (matches Rust PlayOk::new implementation)
         // The client will use these values to authenticate with the game server
         buffer.writeInt32(session_key_.play_ok1);
